@@ -22,6 +22,8 @@
 #ifndef TOERSTEIN_H
 #define TOERSTEIN_H
 
+#include "toolarea.h"
+
 #include <QMainWindow>
 
 class Toerstein : public QMainWindow
@@ -41,10 +43,14 @@ private slots:
     void saveAs(void);
     void closeFile(void);
     void toggleViewMode(void);
-    void setLeftFilePath(QString name);
-    void setRightFilePath(QString name);
+    void setLeftFilePath(QString path);
+    void setRightFilePath(QString path);
 
 private:
+    ToolArea* createToolArea(void);
+    bool isFileValid(QString path);
+    void open(QString path);
+    void open(QString path1, QString path2);
     QTabWidget *tabWidget;
 };
 

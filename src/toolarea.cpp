@@ -58,24 +58,42 @@ ToolArea::ToolArea(QWidget *parent) : QWidget(parent)
     diffModeEnabled = false;
 }
 
-bool ToolArea::open(QString name)
+bool ToolArea::open(QString path)
 {
     if ( leftCodeEditor->hasFocus() || leftFileSearch->hasFocus() )
     {
         if ( !leftCodeEditor->hasContent() )
         {
-            return leftCodeEditor->open(name);
+            return leftCodeEditor->open(path);
         }
     }
     else
     {
         if ( !rightCodeEditor->hasContent() )
         {
-            return rightCodeEditor->open(name);
+            return rightCodeEditor->open(path);
         }
     }
 
     return false;
+}
+
+bool ToolArea::open(QString path1, QString path2)
+{
+    if ( leftCodeEditor->hasContent() || rightCodeEditor->hasContent() )
+    {
+        return false;
+    }
+
+    if( !diffModeEnabled )
+    {
+        toggleViewMode();
+    }
+
+    leftCodeEditor->open(path1);
+    rightCodeEditor->open(path2);
+
+    return true;
 }
 
 void ToolArea::search(void)
@@ -174,14 +192,14 @@ void ToolArea::setFocusToRightCodeEditor(void)
     rightCodeEditor->setFocus();
 }
 
-void ToolArea::setLeftFilePath(QString name)
+void ToolArea::setLeftFilePath(QString path)
 {
-    emit leftFilePathChanged(name);
+    emit leftFilePathChanged(path);
 }
 
-void ToolArea::setRightFilePath(QString name)
+void ToolArea::setRightFilePath(QString path)
 {
-    emit rightFilePathChanged(name);
+    emit rightFilePathChanged(path);
 }
 
 void ToolArea::searchFile(void)

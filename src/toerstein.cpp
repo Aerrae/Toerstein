@@ -28,6 +28,9 @@
 #include <QTabWidget>
 #include <QFileDialog>
 #include <QDebug>
+#include <QCoreApplication>
+#include <QCommandLineOption>
+#include <QCommandLineParser>
 
 Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
 {
@@ -39,14 +42,14 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     fileMenu->addAction( tr("New &Tab"), this, SLOT(createNewTab()), QKeySequence(tr("Ctrl+T", "File|New Tab") ) );
     fileMenu->addAction( tr("&New"), this, SLOT(createNewFile()), QKeySequence(tr("Ctrl+N", "File|New File") ) );
     fileMenu->addAction( tr("&Open"), this, SLOT(open()), QKeySequence(tr("Ctrl+O", "File|Open File") ) );
-    fileMenu->addAction( tr("Enter File&Path"), this, SLOT(search()), QKeySequence(tr("Ctrl+P", "File|Enter FilePath") ) );
+    fileMenu->addAction( tr("Enter File &Path"), this, SLOT(search()), QKeySequence(tr("Ctrl+P", "File|Enter File Path") ) );
     fileMenu->addAction( tr("&Save"), this, SLOT(save()), QKeySequence(tr("Ctrl+S", "File|Save File") ) );
     fileMenu->addAction( tr("Save As..."), this, SLOT(saveAs()) );
     fileMenu->addAction( tr("&Close File"), this, SLOT(closeFile()), QKeySequence(tr("Ctrl+W", "File|Close File") ) );
     fileMenu->addAction( tr("&Quit"), this, SLOT(close()), QKeySequence(tr("Ctrl+Q", "File|Quit") ) );
 
     QMenu *viewMenu = menuBar->addMenu("View");
-    viewMenu->addAction( tr("&Diff view"), this, SLOT(toggleViewMode()), QKeySequence(tr("Ctrl+D", "Diff view|Quit") ) );
+    viewMenu->addAction( tr("&Toggle Diff View"), this, SLOT(toggleViewMode()), QKeySequence(tr("Ctrl+D", "Toggle Diff View|Quit") ) );
 
     this->setMenuBar(menuBar);
 
@@ -54,47 +57,127 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     tabWidget = new QTabWidget;
     setCentralWidget(tabWidget);
 
-    /* Add one code editor widget to first tab */
-    createNewFile();
+    QCommandLineOption diffMode(QStringList() << "d" << "diff");
+    QCommandLineParser parser;
+
+    parser.addOption(diffMode);
+    parser.process(QCoreApplication::arguments());
+
+    const QStringList args = parser.positionalArguments();
+
+    if ( args.length() > 0 )
+    {
+        if ( parser.isSet(diffMode) )
+        {
+            createNewFile();
+
+            if ( args.length() > 1 )
+            {
+                open(args.at(0), args.at(1));
+            }
+            else
+            {
+                open(args.at(0));
+            }
+        }
+        else
+        {
+            for(int i=0; i < args.length(); i++)
+            {
+                createNewFile();
+                open(args.at(i));
+            }
+        }
+    }
+    else
+    {
+        createNewFile();
+    }
+}
+
+ToolArea* Toerstein::createToolArea(void)
+{
+    ToolArea *toolArea = new ToolArea;
+    connect(toolArea,SIGNAL(leftFilePathChanged(QString)),this,SLOT(setLeftFilePath(QString)));
+    connect(toolArea,SIGNAL(rightFilePathChanged(QString)),this,SLOT(setRightFilePath(QString)));
+    return toolArea;
 }
 
 void Toerstein::createNewFile(void)
 {
-    ToolArea *editorBlock = new ToolArea;
-    tabWidget->setCurrentIndex(tabWidget->addTab(editorBlock,"New tab"));
-    connect(editorBlock,SIGNAL(rightFilePathChanged(QString)),this,SLOT(setRightFilePath(QString)));
-    editorBlock->setFocusToRightCodeEditor();
+    ToolArea *toolArea = createToolArea();
+    tabWidget->setCurrentIndex(tabWidget->addTab(toolArea,"New file"));
+    toolArea->setFocusToRightCodeEditor();
 }
 
 void Toerstein::createNewTab(void)
 {
-    ToolArea *editorBlock = new ToolArea;
-    tabWidget->setCurrentIndex(tabWidget->addTab(editorBlock,"New tab"));
-    connect(editorBlock,SIGNAL(rightFilePathChanged(QString)),this,SLOT(setRightFilePath(QString)));
-    editorBlock->setFocusToRightFileSearch();
+    ToolArea *toolArea = createToolArea();
+    tabWidget->setCurrentIndex(tabWidget->addTab(toolArea,"New tab"));
+    toolArea->setFocusToRightFileSearch();
+}
+
+bool Toerstein::isFileValid(QString path)
+{
+    QFileInfo fileInfo(path);
+
+    if ( !fileInfo.exists() )
+    {
+        qDebug() << "File not found:" << path;
+        return false;
+    }
+
+    if ( !fileInfo.isFile() )
+    {
+        qDebug() << path << "is not a file";
+        return false;
+    }
+
+    return true;
 }
 
 void Toerstein::open(void)
 {
-    QString name = QFileDialog::getOpenFileName(this,
+    QString path = QFileDialog::getOpenFileName(this,
         tr("Open File"), tr("All files (*.*)"));
 
-    QFileInfo fileInfo(name);
+    open(path);
+}
 
-    if ( !fileInfo.exists() || !fileInfo.isFile() )
+void Toerstein::open(QString path)
+{
+    if (!isFileValid(path))
     {
         return;
     }
 
     ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
 
-    if ( !toolArea->open(name) )
+    if ( !toolArea->open(path) )
     {
         createNewTab();
     }
 
     toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
-    toolArea->open(name);
+    toolArea->open(path);
+}
+
+void Toerstein::open(QString path1, QString path2)
+{
+    if (!isFileValid(path1) || !isFileValid(path2))
+    {
+        return;
+    }
+
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+
+    if ( !toolArea->open(path1, path2) )
+    {
+        createNewTab();
+    }
+
+    toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    toolArea->open(path1, path2);
 }
 
 void Toerstein::search(void)
@@ -138,12 +221,12 @@ void Toerstein::toggleViewMode(void)
     qobject_cast<ToolArea *>(tabWidget->currentWidget())->toggleViewMode();
 }
 
-void Toerstein::setLeftFilePath(QString name)
+void Toerstein::setLeftFilePath(QString path)
 {
-    qDebug() << "Left filepath set to: " << name;
+    qDebug() << "Left filepath set to" << path;
 }
 
-void Toerstein::setRightFilePath(QString name)
+void Toerstein::setRightFilePath(QString path)
 {
     ToolArea* toolArea = qobject_cast<ToolArea *>(sender());
 
@@ -151,16 +234,16 @@ void Toerstein::setRightFilePath(QString name)
 
     if ( tabIndex >= 0 )
     {
-        if ( name.isEmpty() )
+        if ( path.isEmpty() )
         {
-            tabWidget->setTabText(tabIndex,"New file");
+            tabWidget->setTabText(tabIndex,"New tab");
         }
             else
         {
-            tabWidget->setTabText(tabIndex,QFileInfo(name).fileName());
+            tabWidget->setTabText(tabIndex,QFileInfo(path).fileName());
         }
     }
-    qDebug() << "Right filepath set to: " << name;
+    qDebug() << "Right filepath set to" << path;
 }
 
 Toerstein::~Toerstein()

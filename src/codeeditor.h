@@ -65,6 +65,11 @@ public:
     int lineNumberAreaWidth();
     bool hasContent(void);
     bool hasChanged(void);
+    QSize sizeHint() const Q_DECL_OVERRIDE
+    {
+        return QSize(160*fontMetrics().width(QLatin1Char('9')),
+                     35*fontMetrics().height());
+    }
 
 public slots:
     bool open(QString name);
@@ -98,16 +103,19 @@ private:
 class LineNumberArea : public QWidget
 {
 public:
-    LineNumberArea(CodeEditor *editor) : QWidget(editor) {
+    LineNumberArea(CodeEditor *editor) : QWidget(editor)
+    {
         codeEditor = editor;
     }
 
-    QSize sizeHint() const Q_DECL_OVERRIDE {
+    QSize sizeHint() const Q_DECL_OVERRIDE
+    {
         return QSize(codeEditor->lineNumberAreaWidth(), 0);
     }
 
 protected:
-    void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE {
+    void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE
+    {
         codeEditor->lineNumberAreaPaintEvent(event);
     }
 

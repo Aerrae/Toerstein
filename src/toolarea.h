@@ -35,7 +35,6 @@ public:
     explicit ToolArea(QWidget *parent = 0);
 
 public slots:
-    bool open(QString name);
     void search(void);
     void save(void);
     void saveAs(void);
@@ -46,9 +45,13 @@ public slots:
     void setFocusToLeftCodeEditor(void);
     void setFocusToRightCodeEditor(void);
 
+public:
+    bool open(QString path);
+    bool open(QString path1, QString path2);
+
 signals:
-    void leftFilePathChanged(QString name);
-    void rightFilePathChanged(QString name);
+    void leftFilePathChanged(QString path);
+    void rightFilePathChanged(QString path);
 
 private:
     QGridLayout *layout;
@@ -59,8 +62,8 @@ private:
     bool diffModeEnabled;
 
 private slots:
-    void setLeftFilePath(QString name);
-    void setRightFilePath(QString name);
+    void setLeftFilePath(QString path);
+    void setRightFilePath(QString path);
     void searchFile(void);
 };
 
