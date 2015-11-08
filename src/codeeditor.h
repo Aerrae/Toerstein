@@ -76,10 +76,12 @@ public slots:
     bool save(void);
     bool saveAs(void);
     bool closeFile(void);
+    void setIndentWithSpaces(bool newIndentWithSpaces);
+    void setIndentSize(int newIndentSize);
 
 protected:
     void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
-
+    void keyPressEvent(QKeyEvent* e);
 signals:
     void filePathChanged(QString name);
 
@@ -97,6 +99,8 @@ private:
     bool contentHasChanged;
     QString fileName;
     QFile file;
+    bool indentWithSpaces;
+    int indentSize;
 };
 
 

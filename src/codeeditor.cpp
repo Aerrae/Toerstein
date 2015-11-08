@@ -62,6 +62,12 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
 
     setContentChanged(false);
     fileName = "";
+    indentWithSpaces = true;
+    indentSize = 4;
+
+    QFont font("Monospace");
+    font.setStyleHint(QFont::TypeWriter);
+    setFont(font);
 }
 
 bool CodeEditor::hasContent(void)
@@ -211,6 +217,16 @@ bool CodeEditor::closeFile(void)
     return true;
 }
 
+void CodeEditor::setIndentWithSpaces(bool newIndentWithSpaces)
+{
+    indentWithSpaces = newIndentWithSpaces;
+}
+
+void CodeEditor::setIndentSize(int newIndentSize)
+{
+    indentSize = newIndentSize;
+}
+
 void CodeEditor::setFilePath(QString name)
 {
     if (name != fileName)
@@ -262,6 +278,24 @@ void CodeEditor::resizeEvent(QResizeEvent *e)
 
     QRect cr = contentsRect();
     lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
+}
+
+void CodeEditor::keyPressEvent(QKeyEvent* e)
+{
+    QString text = e->text();
+
+    switch(e->key())
+    {
+    case Qt::Key_Tab:
+        if ( indentWithSpaces )
+        {
+            text.fill(' ', indentSize);
+        }
+        break;
+    }
+    QKeyEvent *newEvent = new QKeyEvent( e->type(), e->key(), e->modifiers(),
+        text, e->isAutoRepeat(), e->count());
+    QPlainTextEdit::keyPressEvent(newEvent);
 }
 
 void CodeEditor::highlightCurrentLine()
