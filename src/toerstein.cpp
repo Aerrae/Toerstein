@@ -21,6 +21,7 @@
 
 #include "toerstein.h"
 
+#include "toerstebase.h"
 #include "codeeditor.h"
 #include "toolarea.h"
 
@@ -34,7 +35,10 @@
 
 Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
 {
-    QMenuBar *menuBar = new QMenuBar;
+    toersteBase = new ToersteBase(this);
+    toerstelliSense = new ToerstelliSense(this,toersteBase);
+
+    QMenuBar *menuBar = new QMenuBar(this);
 
     /* Create File menu */
     QMenu *fileMenu = menuBar->addMenu("File");
@@ -54,7 +58,7 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     this->setMenuBar(menuBar);
 
     /* Create tab view */
-    tabWidget = new QTabWidget;
+    tabWidget = new QTabWidget(this);
     setCentralWidget(tabWidget);
 
     QCommandLineOption diffMode(QStringList() << "d" << "diff");
@@ -97,7 +101,7 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
 
 ToolArea* Toerstein::createToolArea(void)
 {
-    ToolArea *toolArea = new ToolArea;
+    ToolArea *toolArea = new ToolArea(this,toersteBase);
     connect(toolArea,SIGNAL(leftFilePathChanged(QString)),this,SLOT(setLeftFilePath(QString)));
     connect(toolArea,SIGNAL(rightFilePathChanged(QString)),this,SLOT(setRightFilePath(QString)));
     return toolArea;
@@ -223,12 +227,14 @@ void Toerstein::toggleViewMode(void)
 
 void Toerstein::setLeftFilePath(QString path)
 {
-    qDebug() << "Left filepath set to" << path;
+    qDebug() << "Toerstein: Left filepath set to" << path;
 }
 
 void Toerstein::setRightFilePath(QString path)
 {
     ToolArea* toolArea = qobject_cast<ToolArea *>(sender());
+
+    qDebug() << "Toerstein: Right filepath set to" << path;
 
     int tabIndex = tabWidget->indexOf(toolArea);
 
@@ -241,9 +247,9 @@ void Toerstein::setRightFilePath(QString path)
             else
         {
             tabWidget->setTabText(tabIndex,QFileInfo(path).fileName());
+            toerstelliSense->indexFile(path);
         }
     }
-    qDebug() << "Right filepath set to" << path;
 }
 
 Toerstein::~Toerstein()

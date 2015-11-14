@@ -22,6 +22,8 @@
 #ifndef TOERSTEIN_H
 #define TOERSTEIN_H
 
+#include "toerstebase.h"
+#include "toerstellisense.h"
 #include "toolarea.h"
 
 #include <QMainWindow>
@@ -52,6 +54,8 @@ private:
     void open(QString path);
     void open(QString path1, QString path2);
     QTabWidget *tabWidget;
+    ToersteBase *toersteBase;
+    ToerstelliSense *toerstelliSense;
 };
 
 #endif // TOERSTEIN_H

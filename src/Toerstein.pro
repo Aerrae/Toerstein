@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -15,10 +15,16 @@ TEMPLATE = app
 SOURCES += main.cpp\
         toerstein.cpp \
     codeeditor.cpp \
-    toolarea.cpp
+    toolarea.cpp \
+    filesearch.cpp \
+    toerstebase.cpp \
+    toerstellisense.cpp
 
 HEADERS  += toerstein.h \
     codeeditor.h \
-    toolarea.h
+    toolarea.h \
+    filesearch.h \
+    toerstebase.h \
+    toerstellisense.h
 
 FORMS    +=

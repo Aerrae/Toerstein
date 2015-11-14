@@ -20,22 +20,25 @@
 *************************************************************************************/
 
 #include "toolarea.h"
+#include "filesearch.h"
 
 #include <QGridLayout>
 #include <QTabWidget>
 
-ToolArea::ToolArea(QWidget *parent) : QWidget(parent)
+ToolArea::ToolArea(QWidget *parent, ToersteBase *database) : QWidget(parent)
 {
-    layout = new QGridLayout;
+    toersteBase = database;
+
+    layout = new QGridLayout(this);
     this->setLayout(layout);
 
-    leftFileSearch = new QLineEdit;
+    leftFileSearch = new FileSearch(this);
     leftFileSearch->setPlaceholderText("File path...");
-    leftCodeEditor = new CodeEditor;
+    leftCodeEditor = new CodeEditor(this);
 
-    rightFileSearch = new QLineEdit;
+    rightFileSearch = new FileSearch(this);
     rightFileSearch->setPlaceholderText("File path...");
-    rightCodeEditor = new CodeEditor;
+    rightCodeEditor = new CodeEditor(this);
 
     layout->addWidget(leftFileSearch,0,0);
     layout->addWidget(leftCodeEditor,1,0);
@@ -50,8 +53,10 @@ ToolArea::ToolArea(QWidget *parent) : QWidget(parent)
     connect(leftCodeEditor,SIGNAL(filePathChanged(QString)),this,SLOT(setLeftFilePath(QString)));
     connect(rightCodeEditor,SIGNAL(filePathChanged(QString)),this,SLOT(setRightFilePath(QString)));
 
-    connect(leftFileSearch,SIGNAL(returnPressed()),this,SLOT(searchFile()));
-    connect(rightFileSearch,SIGNAL(returnPressed()),this,SLOT(searchFile()));
+    connect(leftFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
+    connect(rightFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
+    connect(leftFileSearch,SIGNAL(keyPressed(QString)),toersteBase,SLOT(queryFileInfo(QString)));
+    connect(rightFileSearch,SIGNAL(keyPressed(QString)),toersteBase,SLOT(queryFileInfo(QString)));
 
     rightCodeEditor->setFocus();
 
@@ -202,16 +207,36 @@ void ToolArea::setRightFilePath(QString path)
     emit rightFilePathChanged(path);
 }
 
-void ToolArea::searchFile(void)
+void ToolArea::fileSearchPathOpen(void)
 {
-    QLineEdit *fileSearch = qobject_cast<QLineEdit *>(sender());
+    FileSearch *fileSearch = qobject_cast<FileSearch *>(sender());
+    QString path;
+    QRegExp rx;
 
-    if ( fileSearch->objectName() == "leftFileSearch" )
+    if ( fileSearch == leftFileSearch )
     {
-        leftCodeEditor->open(fileSearch->text());
+        path = fileSearch->text();
     }
     else
     {
-        rightCodeEditor->open(fileSearch->text());
+        path = fileSearch->text();
+    }
+
+    /* Filter filename.ext ( /path/../filename.ext ) */
+    rx.setPattern("^(.+) \\( (.+) \\)$");
+
+    if (rx.indexIn(path) != -1)
+    {
+        /* Convert to /path/../filename.ext */
+        path = rx.cap(2);
+    }
+
+    if ( fileSearch == leftFileSearch )
+    {
+        leftCodeEditor->open(path);
+    }
+    else
+    {
+        rightCodeEditor->open(path);
     }
 }

@@ -22,7 +22,9 @@
 #ifndef TOOLAREA_H
 #define TOOLAREA_H
 
+#include "toerstebase.h"
 #include "codeeditor.h"
+#include "filesearch.h"
 
 #include <QWidget>
 #include <QGridLayout>
@@ -32,7 +34,7 @@ class ToolArea : public QWidget
 {
     Q_OBJECT
 public:
-    explicit ToolArea(QWidget *parent = 0);
+    explicit ToolArea(QWidget *parent = 0, ToersteBase *database = 0);
 
 public slots:
     void search(void);
@@ -55,16 +57,17 @@ signals:
 
 private:
     QGridLayout *layout;
-    QLineEdit *leftFileSearch;
+    FileSearch *leftFileSearch;
     CodeEditor *leftCodeEditor;
-    QLineEdit *rightFileSearch;
+    FileSearch *rightFileSearch;
     CodeEditor *rightCodeEditor;
+    ToersteBase *toersteBase;
     bool diffModeEnabled;
 
 private slots:
     void setLeftFilePath(QString path);
     void setRightFilePath(QString path);
-    void searchFile(void);
+    void fileSearchPathOpen(void);
 };
 
 #endif // TOOLAREA_H
