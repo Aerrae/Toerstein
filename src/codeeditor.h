@@ -44,6 +44,7 @@
 #include <QPlainTextEdit>
 #include <QMessageBox>
 #include <QObject>
+#include <QFileSystemWatcher>
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;
@@ -72,7 +73,7 @@ public:
     }
 
 public slots:
-    bool open(QString name);
+    bool open(QString path);
     bool save(void);
     bool saveAs(void);
     bool closeFile(void);
@@ -86,18 +87,21 @@ signals:
     void filePathChanged(QString name);
 
 private slots:
-    void setFilePath(QString name);
+    void fileChanged(QString path);
+    void setFilePath(QString path);
     void setContentChanged(bool changed);
-    bool writeFile(QString name);
+    bool writeFile(QString path);
     void updateLineNumberAreaWidth(int newBlockCount);
     void highlightCurrentLine();
     void updateLineNumberArea(const QRect &, int);
 
 private:
+    QFileSystemWatcher *fileSystemWatcher;
     QMessageBox::StandardButton askToSave(void);
+    QMessageBox::StandardButton fileChangedAskToDiscard(QString path);
     QWidget *lineNumberArea;
     bool contentHasChanged;
-    QString fileName;
+    QString filePath;
     QFile file;
     bool indentWithSpaces;
     int indentSize;

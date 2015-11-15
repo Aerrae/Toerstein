@@ -42,6 +42,7 @@
 ****************************************************************************/
 
 #include <QtWidgets>
+#include <QFileSystemWatcher>
 #include <QMessageBox>
 #include <QLineEdit>
 #include <QGridLayout>
@@ -51,7 +52,9 @@
 CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
 {
     lineNumberArea = new LineNumberArea(this);
+    fileSystemWatcher = new QFileSystemWatcher(this);
 
+    connect(fileSystemWatcher,SIGNAL(fileChanged(QString)),this,SLOT(fileChanged(QString)));
     connect(this, SIGNAL(modificationChanged(bool)),this, SLOT(setContentChanged(bool)));
     connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)));
     connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
@@ -61,7 +64,7 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
     highlightCurrentLine();
 
     setContentChanged(false);
-    fileName = "";
+    filePath = "";
     indentWithSpaces = true;
     indentSize = 4;
 
@@ -72,7 +75,7 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
 
 bool CodeEditor::hasContent(void)
 {
-    return ( !fileName.isEmpty() || contentHasChanged );
+    return ( !filePath.isEmpty() || contentHasChanged );
 }
 
 bool CodeEditor::hasChanged(void)
@@ -85,25 +88,26 @@ void CodeEditor::setContentChanged(bool changed)
     contentHasChanged = changed;
 }
 
-bool CodeEditor::open(QString name)
+bool CodeEditor::open(QString path)
 {
-    QFileInfo fileInfo(name);
+    QFileInfo fileInfo(path);
 
     if ( fileInfo.exists() )
     {
         if ( !fileInfo.isFile() )
         {
-        QMessageBox messageBox;
-        messageBox.setText(QString("\"%1\" is a folder").arg(name));
-        messageBox.exec();
+            QMessageBox::warning(this, tr("Error"),
+                                       tr("\"%1\" is a folder.").arg(path),
+                                       QMessageBox::Ok );
         return false;
         }
     }
     else
     {
-        QMessageBox messageBox;
-        messageBox.setText(QString("File: \"%1\" does not exist").arg(name));
-        messageBox.exec();
+        QMessageBox::critical(this, tr("Error"),
+                                    tr("File:\n\"%1\"\n"
+                                       "does not exist.").arg(path),
+                                       QMessageBox::Ok );
         return false;
     }
 
@@ -112,17 +116,35 @@ bool CodeEditor::open(QString name)
         return false;
     }
 
-    file.setFileName(name);
+    file.setFileName(path);
 
-    if (!file.open(QFile::ReadOnly))
+    if (!file.open(QFile::ReadWrite))
     {
-        file.setFileName("");
-        return false;
+        if (!file.open(QFile::ReadOnly))
+        {           
+            QMessageBox::critical(this, tr("Error"),
+                                        tr("Cannot open file:\n\"%1\"\n"
+                                           "Permission denied.").arg(path),
+                                           QMessageBox::Ok );
+
+            file.setFileName("");
+            return false;
+        }
+        else
+        {
+            this->setReadOnly(true);
+        }
+    }
+    else
+    {
+        this->setReadOnly(false);
     }
 
     setPlainText(file.readAll());
 
-    setFilePath(name);
+    file.close();
+
+    setFilePath(path);
 
     setContentChanged(false);
 
@@ -131,14 +153,14 @@ bool CodeEditor::open(QString name)
 
 bool CodeEditor::save(void)
 {
-    if ( fileName.isEmpty() )
+    if ( filePath.isEmpty() )
     {
         return saveAs();
     }
     else
     {   if ( contentHasChanged )
         {
-            return writeFile(fileName);
+            return writeFile(filePath);
         }
         else
         {
@@ -159,12 +181,16 @@ bool CodeEditor::saveAs(void)
     return writeFile(name);
 }
 
-bool CodeEditor::writeFile(QString name)
+bool CodeEditor::writeFile(QString path)
 {
-    file.setFileName(name);
+    file.setFileName(path);
 
     if (!file.open(QFile::WriteOnly))
     {
+        QMessageBox::critical(this, tr("Error"),
+                                    tr("Cannot overwrite file:\n\"%1\"\n"
+                                       "Permission denied.").arg(path),
+                                       QMessageBox::Ok );
         return false;
     }
 
@@ -172,9 +198,12 @@ bool CodeEditor::writeFile(QString name)
 
     ts << toPlainText();
 
+    file.close();
+
+    this->setReadOnly(false);
     this->document()->setModified(false);
 
-    setFilePath(name);
+    setFilePath(path);
 
     return true;
 }
@@ -182,10 +211,22 @@ bool CodeEditor::writeFile(QString name)
 QMessageBox::StandardButton CodeEditor::askToSave(void)
 {
     QMessageBox msgBox;
-    msgBox.setText("Document has been modified.");
-    msgBox.setInformativeText("Do you want to save your changes?");
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setText(tr("File has been modified."));
+    msgBox.setInformativeText(tr("Do you want to save your changes?"));
     msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
     msgBox.setDefaultButton(QMessageBox::Save);
+    return static_cast<QMessageBox::StandardButton>(msgBox.exec());
+}
+
+QMessageBox::StandardButton CodeEditor::fileChangedAskToDiscard(QString path)
+{
+    QMessageBox msgBox;
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setText(tr("File:\n\"%1\"\nhas been modified in the background.").arg(path));
+    msgBox.setInformativeText(tr("Do you want to discard your changes?"));
+    msgBox.setStandardButtons(QMessageBox::Discard | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Discard);
     return static_cast<QMessageBox::StandardButton>(msgBox.exec());
 }
 
@@ -205,11 +246,6 @@ bool CodeEditor::closeFile(void)
         }
     }
 
-    if ( file.isOpen() )
-    {
-        file.close();
-    }
-
     setPlainText("");
     setFilePath("");
     setContentChanged(false);
@@ -227,12 +263,36 @@ void CodeEditor::setIndentSize(int newIndentSize)
     indentSize = newIndentSize;
 }
 
-void CodeEditor::setFilePath(QString name)
+void CodeEditor::fileChanged(QString path)
 {
-    if (name != fileName)
+    if ( contentHasChanged )
     {
-        fileName = name;
-        emit filePathChanged(fileName);
+        if ( fileChangedAskToDiscard(path) == QMessageBox::Discard )
+        {
+            open(path);
+        }
+    }
+    else
+    {
+        open(path);
+    }
+}
+
+void CodeEditor::setFilePath(QString path)
+{
+    if (filePath != path)
+    {
+        if ( path.isEmpty() && !filePath.isEmpty() )
+        {
+            fileSystemWatcher->removePath(filePath);
+        }
+        else
+        {
+            fileSystemWatcher->addPath(path);
+        }
+
+        filePath = path;
+        emit filePathChanged(path);
     }
 }
 
@@ -327,8 +387,10 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
     int top = (int) blockBoundingGeometry(block).translated(contentOffset()).top();
     int bottom = top + (int) blockBoundingRect(block).height();
 
-    while (block.isValid() && top <= event->rect().bottom()) {
-        if (block.isVisible() && bottom >= event->rect().top()) {
+    while (block.isValid() && top <= event->rect().bottom())
+    {
+        if (block.isVisible() && bottom >= event->rect().top())
+        {
             QString number = QString::number(blockNumber + 1);
             painter.setPen(Qt::black);
             painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(),
