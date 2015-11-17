@@ -43,6 +43,12 @@ protected:
 
 private:
     QCompleter *completer;
+    bool storeCursor;
+    bool restoreCursor;
+    int cursorOldPos;
+
+private slots:
+    void clearCompleter(void);
 };
 
 #endif // FILESEARCH_H

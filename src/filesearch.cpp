@@ -28,15 +28,25 @@
 #include <QCompleter>
 #include <QEvent>
 #include <QKeyEvent>
-#include <QDebug>
 
 FileSearch::FileSearch(QWidget *parent) : QLineEdit(parent)
 {
+    connect(this,SIGNAL(returnPressed()),this,SLOT(clearCompleter()));
     completer = new QCompleter(this);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     completer->setWrapAround(true);
     completer->setCompletionMode(QCompleter::InlineCompletion);
     this->setCompleter(completer);
+
+    storeCursor = false;
+    restoreCursor = false;
+}
+
+void FileSearch::clearCompleter(void)
+{
+    completer->setModel(NULL);
+    storeCursor = false;
+    restoreCursor = false;
 }
 
 void FileSearch::updateList(QStringList list)
@@ -48,9 +58,6 @@ void FileSearch::updateList(QStringList list)
     {
         return;
     }
-
-    qDebug() << "FileSearch: updateList";
-    qDebug() << list;
 
     if( !model )
     {
@@ -68,11 +75,17 @@ bool FileSearch::event(QEvent* e)
     {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
 
+        storeCursor = true;
+
         if ( keyEvent->key() == Qt::Key_Tab )
         {
-            QString path = completer->currentCompletion();
+            if ( restoreCursor )
+            {
+                setCursorPosition(0);
+                restoreCursor = false;
+            }
 
-            qDebug() << "FileSearch: completionCount" << completer->completionCount();
+            QString path = completer->currentCompletion();
 
             if ( completer->completionCount() == 1 )
             {
@@ -94,5 +107,19 @@ bool FileSearch::event(QEvent* e)
             emit keyPressed(this->text());
         }
     }
-    return QLineEdit::event(e);
+    else if ( storeCursor && ( e->type() == QEvent::MouseButtonPress ) )
+    {
+        cursorOldPos = cursorPosition();
+    }
+
+    bool eventReturn = QLineEdit::event(e);
+
+    if ( storeCursor && ( e->type() == QEvent::MouseButtonPress ) &&
+        ( cursorOldPos != cursorPosition() ) )
+    {
+        storeCursor = false;
+        restoreCursor = true;
+    }
+
+    return eventReturn;
 }
