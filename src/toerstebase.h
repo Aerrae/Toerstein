@@ -25,6 +25,7 @@
 #include <QObject>
 #include <QFileInfo>
 #include <QSqlDatabase>
+#include <QThread>
 
 class ToersteBase : public QObject
 {
@@ -35,15 +36,40 @@ public:
     bool isFileIndexed(const QFileInfo &fileInfo);
 
 signals:
+    void openDatabase(void);
+    void closeDatabase(void);
+    void newFileNameQuery(QObject* sender, const QString &filename);
+    void newFileInsert(const QString &path);
 
 public slots:
     void queryFileInfo(const QString &filename);
-    void insertFileInfo(const QFileInfo &fileInfo);
+    void insertFileInfo(const QString &path);
 
 private slots:
 
 private:
-    bool openDatabase(void);
+    QThread toersteBaseThread;
+};
+
+class ToersteBaseWorker : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit ToersteBaseWorker(void);
+    ~ToersteBaseWorker();
+
+public slots:
+    void queryFileInfo(QObject* sender, const QString &fileNameToSearch);
+    void insertFileInfo(const QString &path);
+    void openDatabase(void);
+
+signals:
+
+private slots:
+    bool isFileIndexed(const QFileInfo &fileInfo);
+
+private:
     QSqlDatabase fileDatabase;
 };
 

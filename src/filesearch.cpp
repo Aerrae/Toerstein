@@ -109,11 +109,11 @@ bool FileSearch::event(QEvent* e)
         }
         else if ( keyEvent->key() == Qt::Key_Backspace )
         {
-            timer->start(1000);
+            timer->start(600);
         }
         else
         {
-            timer->start(250);
+            timer->start(200);
         }
     }
     else if ( storeCursor && ( e->type() == QEvent::MouseButtonPress ) )

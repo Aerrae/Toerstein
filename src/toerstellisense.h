@@ -31,11 +31,12 @@ class ToerstelliSense : public QObject
     Q_OBJECT
 public:
     explicit ToerstelliSense(QObject *parent = 0, ToersteBase *database = 0);
-    void indexFile(const QString &path);
 
 signals:
+    void indexingFile(const QString &path);
 
 public slots:
+    void indexFile(const QString &path);
 
 private:
     ToersteBase *toersteBase;

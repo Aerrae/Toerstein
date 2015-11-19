@@ -27,14 +27,11 @@
 ToerstelliSense::ToerstelliSense(QObject *parent, ToersteBase *database) : QObject(parent)
 {
     toersteBase = database;
+
+    connect(this,SIGNAL(indexingFile(QString)),toersteBase,SLOT(insertFileInfo(QString)));
 }
 
 void ToerstelliSense::indexFile(const QString &path)
 {
-    QFileInfo fileInfo = QFileInfo(path);
-
-    if ( !toersteBase->isFileIndexed(fileInfo) )
-    {
-        toersteBase->insertFileInfo(fileInfo);
-    }
+    emit indexingFile(path);
 }

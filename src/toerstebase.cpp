@@ -30,14 +30,46 @@
 
 ToersteBase::ToersteBase(QObject *parent) : QObject(parent)
 {
-    openDatabase();
+    ToersteBaseWorker *toersteBaseWorker = new ToersteBaseWorker;
+    toersteBaseWorker->moveToThread(&toersteBaseThread);
+
+    connect(&toersteBaseThread, SIGNAL(finished()), toersteBaseWorker, SLOT(deleteLater()));
+
+    connect(this, SIGNAL(openDatabase()),toersteBaseWorker, SLOT(openDatabase()));
+    connect(this, SIGNAL(newFileNameQuery(QObject*, QString)), toersteBaseWorker, SLOT(queryFileInfo(QObject*, QString)));
+    connect(this, SIGNAL(newFileInsert(QString)), toersteBaseWorker, SLOT(insertFileInfo(QString)));
+
+    toersteBaseThread.start();
+
+    emit openDatabase();
 }
 
-bool ToersteBase::openDatabase(void)
+void ToersteBase::queryFileInfo(const QString &fileNameToSearch)
+{
+    emit newFileNameQuery(sender(), fileNameToSearch);
+}
+
+void ToersteBase::insertFileInfo(const QString &path)
+{
+    emit newFileInsert(path);
+}
+
+ToersteBase::~ToersteBase()
+{
+    toersteBaseThread.quit();
+    toersteBaseThread.wait();
+}
+
+ToersteBaseWorker::ToersteBaseWorker(void)
+{
+    this->setObjectName("ToersteBase");
+}
+
+void ToersteBaseWorker::openDatabase(void)
 {
     if ( fileDatabase.isOpen() )
     {
-        return true;
+        return;
     }
 
     fileDatabase = QSqlDatabase::addDatabase("QSQLITE");
@@ -49,19 +81,23 @@ bool ToersteBase::openDatabase(void)
     {
         qDebug() << "Cannot open database";
 
-        return false;
+        return;
     }
 
     QSqlQuery query;
 
     query.exec("CREATE TABLE IF NOT EXISTS file (id INT auto_increment primary key, "
                "fileName TEXT, canonicalPath TEXT)");
-
-    return true;
 }
 
-void ToersteBase::queryFileInfo(const QString &fileNameToSearch)
+void ToersteBaseWorker::queryFileInfo(QObject* sender, const QString &fileNameToSearch)
 {
+    if( !fileDatabase.isOpen() )
+    {
+        qDebug() << "ToersteBase: Error: Database is not open";
+        return;
+    }
+
     QString fileName;
     QStringList fileNameList;
     QSqlQuery query;
@@ -76,8 +112,6 @@ void ToersteBase::queryFileInfo(const QString &fileNameToSearch)
     int fileNameField = query.record().indexOf("fileName");
     int pathField = query.record().indexOf("canonicalPath");
 
-    qDebug() << "Query:" << fileNameToSearch;
-
     while ( query.next() )
     {
         fileName = query.value(fileNameField).toString() + " ( " + query.value(pathField).toString() +
@@ -86,14 +120,14 @@ void ToersteBase::queryFileInfo(const QString &fileNameToSearch)
     }
 
     QMetaObject::invokeMethod(
-        sender(),
+        sender,
         "updateList",
         Qt::QueuedConnection,
         Q_ARG(QStringList, fileNameList));
 
 }
 
-bool ToersteBase::isFileIndexed(const QFileInfo &fileInfo)
+bool ToersteBaseWorker::isFileIndexed(const QFileInfo &fileInfo)
 {
     QSqlQuery query;
     QString sqlError;
@@ -127,8 +161,21 @@ bool ToersteBase::isFileIndexed(const QFileInfo &fileInfo)
 
 }
 
-void ToersteBase::insertFileInfo(const QFileInfo &fileInfo)
+void ToersteBaseWorker::insertFileInfo(const QString &path)
 {
+    if( !fileDatabase.isOpen() )
+    {
+        qDebug() << "ToersteBase: Error: Database is not open";
+        return;
+    }
+
+    QFileInfo fileInfo(path);
+
+    if ( isFileIndexed(fileInfo) )
+    {
+        return;
+    }
+
     QSqlQuery query;
     QString sqlError;
 
@@ -149,7 +196,7 @@ void ToersteBase::insertFileInfo(const QFileInfo &fileInfo)
     }
 }
 
-ToersteBase::~ToersteBase()
+ToersteBaseWorker::~ToersteBaseWorker()
 {
     if( fileDatabase.isOpen() )
     {
