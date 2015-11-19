@@ -55,15 +55,15 @@ ToolArea::ToolArea(QWidget *parent, ToersteBase *database) : QWidget(parent)
 
     connect(leftFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
     connect(rightFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
-    connect(leftFileSearch,SIGNAL(keyPressed(QString)),toersteBase,SLOT(queryFileInfo(QString)));
-    connect(rightFileSearch,SIGNAL(keyPressed(QString)),toersteBase,SLOT(queryFileInfo(QString)));
+    connect(leftFileSearch,SIGNAL(writingPaused(QString)),toersteBase,SLOT(queryFileInfo(QString)));
+    connect(rightFileSearch,SIGNAL(writingPaused(QString)),toersteBase,SLOT(queryFileInfo(QString)));
 
     rightCodeEditor->setFocus();
 
     diffModeEnabled = false;
 }
 
-bool ToolArea::open(QString path)
+bool ToolArea::open(const QString &path)
 {
     if ( leftCodeEditor->hasFocus() || leftFileSearch->hasFocus() )
     {
@@ -83,7 +83,7 @@ bool ToolArea::open(QString path)
     return false;
 }
 
-bool ToolArea::open(QString path1, QString path2)
+bool ToolArea::open(const QString &path1, const QString &path2)
 {
     if ( leftCodeEditor->hasContent() || rightCodeEditor->hasContent() )
     {
@@ -197,12 +197,12 @@ void ToolArea::setFocusToRightCodeEditor(void)
     rightCodeEditor->setFocus();
 }
 
-void ToolArea::setLeftFilePath(QString path)
+void ToolArea::setLeftFilePath(const QString &path)
 {
     emit leftFilePathChanged(path);
 }
 
-void ToolArea::setRightFilePath(QString path)
+void ToolArea::setRightFilePath(const QString &path)
 {
     emit rightFilePathChanged(path);
 }

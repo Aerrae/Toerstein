@@ -32,13 +32,13 @@ class ToersteBase : public QObject
 public:
     explicit ToersteBase(QObject *parent = 0);
      ~ToersteBase();
-    bool isFileIndexed(QFileInfo fileInfo);
+    bool isFileIndexed(const QFileInfo &fileInfo);
 
 signals:
 
 public slots:
-    void queryFileInfo(QString filename);
-    void insertFileInfo(QFileInfo fileInfo);
+    void queryFileInfo(const QString &filename);
+    void insertFileInfo(const QFileInfo &fileInfo);
 
 private slots:
 

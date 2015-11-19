@@ -73,24 +73,26 @@ public:
     }
 
 public slots:
-    bool open(QString path);
+    bool open(const QString &path);
     bool save(void);
     bool saveAs(void);
     bool closeFile(void);
     void setIndentWithSpaces(bool newIndentWithSpaces);
     void setIndentSize(int newIndentSize);
+    void setAlertBackgroundChangesDefault(bool newAlertChanges);
+    void setAlertBackgroundChanges(bool newAlertChanges);
 
 protected:
     void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
     void keyPressEvent(QKeyEvent* e);
 signals:
-    void filePathChanged(QString name);
+    void filePathChanged(const QString &name);
 
 private slots:
-    void fileChanged(QString path);
-    void setFilePath(QString path);
-    void setContentChanged(bool changed);
-    bool writeFile(QString path);
+    void fileChanged(const QString &path);
+    void setFilePath(const QString &path);
+    void setContentChanged(const bool &changed);
+    bool writeFile(const QString &path);
     void updateLineNumberAreaWidth(int newBlockCount);
     void highlightCurrentLine();
     void updateLineNumberArea(const QRect &, int);
@@ -98,13 +100,16 @@ private slots:
 private:
     QFileSystemWatcher *fileSystemWatcher;
     QMessageBox::StandardButton askToSave(void);
-    QMessageBox::StandardButton fileChangedAskToDiscard(QString path);
+    QMessageBox::StandardButton fileChangedAskToLoad(const QString &path);
+    QMessageBox::StandardButton fileChangedAskToDiscard(const QString &path);
     QWidget *lineNumberArea;
     bool contentHasChanged;
     QString filePath;
     QFile file;
     bool indentWithSpaces;
     int indentSize;
+    bool alertBackgroundChanges;
+    bool alertBackgroundChangesDefault;
 };
 
 

@@ -29,7 +29,7 @@ ToerstelliSense::ToerstelliSense(QObject *parent, ToersteBase *database) : QObje
     toersteBase = database;
 }
 
-void ToerstelliSense::indexFile(QString path)
+void ToerstelliSense::indexFile(const QString &path)
 {
     QFileInfo fileInfo = QFileInfo(path);
 

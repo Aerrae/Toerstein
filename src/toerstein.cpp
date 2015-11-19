@@ -121,7 +121,7 @@ void Toerstein::createNewTab(void)
     toolArea->setFocusToRightFileSearch();
 }
 
-bool Toerstein::isFileValid(QString path)
+bool Toerstein::isFileValid(const QString &path)
 {
     QFileInfo fileInfo(path);
 
@@ -148,7 +148,7 @@ void Toerstein::open(void)
     open(path);
 }
 
-void Toerstein::open(QString path)
+void Toerstein::open(const QString &path)
 {
     if (!isFileValid(path))
     {
@@ -166,7 +166,7 @@ void Toerstein::open(QString path)
     toolArea->open(path);
 }
 
-void Toerstein::open(QString path1, QString path2)
+void Toerstein::open(const QString &path1, const QString &path2)
 {
     if (!isFileValid(path1) || !isFileValid(path2))
     {
@@ -225,12 +225,12 @@ void Toerstein::toggleViewMode(void)
     qobject_cast<ToolArea *>(tabWidget->currentWidget())->toggleViewMode();
 }
 
-void Toerstein::setLeftFilePath(QString path)
+void Toerstein::setLeftFilePath(const QString &path)
 {
     qDebug() << "Toerstein: Left filepath set to" << path;
 }
 
-void Toerstein::setRightFilePath(QString path)
+void Toerstein::setRightFilePath(const QString &path)
 {
     ToolArea* toolArea = qobject_cast<ToolArea *>(sender());
 
@@ -244,7 +244,7 @@ void Toerstein::setRightFilePath(QString path)
         {
             tabWidget->setTabText(tabIndex,"New tab");
         }
-            else
+        else
         {
             tabWidget->setTabText(tabIndex,QFileInfo(path).fileName());
             toerstelliSense->indexFile(path);

@@ -48,12 +48,12 @@ public slots:
     void setFocusToRightCodeEditor(void);
 
 public:
-    bool open(QString path);
-    bool open(QString path1, QString path2);
+    bool open(const QString &path);
+    bool open(const QString &path1, const QString &path2);
 
 signals:
-    void leftFilePathChanged(QString path);
-    void rightFilePathChanged(QString path);
+    void leftFilePathChanged(const QString &path);
+    void rightFilePathChanged(const QString &path);
 
 private:
     QGridLayout *layout;
@@ -65,8 +65,8 @@ private:
     bool diffModeEnabled;
 
 private slots:
-    void setLeftFilePath(QString path);
-    void setRightFilePath(QString path);
+    void setLeftFilePath(const QString &path);
+    void setRightFilePath(const QString &path);
     void fileSearchPathOpen(void);
 };
 

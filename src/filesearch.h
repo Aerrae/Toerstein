@@ -25,6 +25,7 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QCompleter>
+#include <QTimer>
 
 class FileSearch : public QLineEdit
 {
@@ -33,10 +34,10 @@ public:
     explicit FileSearch(QWidget *parent = 0);
 
 signals:
-    void keyPressed(QString text);
+    void writingPaused(const QString &text);
 
 public slots:
-    void updateList(QStringList list);
+    void updateList(const QStringList &list);
 
 protected:
     bool event(QEvent* e);
@@ -46,9 +47,11 @@ private:
     bool storeCursor;
     bool restoreCursor;
     int cursorOldPos;
+    QTimer *timer;
 
 private slots:
     void clearCompleter(void);
+    void userVatulating(void);
 };
 
 #endif // FILESEARCH_H

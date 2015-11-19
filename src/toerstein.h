@@ -45,14 +45,14 @@ private slots:
     void saveAs(void);
     void closeFile(void);
     void toggleViewMode(void);
-    void setLeftFilePath(QString path);
-    void setRightFilePath(QString path);
+    void setLeftFilePath(const QString &path);
+    void setRightFilePath(const QString &path);
 
 private:
     ToolArea* createToolArea(void);
-    bool isFileValid(QString path);
-    void open(QString path);
-    void open(QString path1, QString path2);
+    bool isFileValid(const QString &path);
+    void open(const QString &path);
+    void open(const QString &path1, const QString &path2);
     QTabWidget *tabWidget;
     ToersteBase *toersteBase;
     ToerstelliSense *toerstelliSense;

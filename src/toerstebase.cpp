@@ -60,7 +60,7 @@ bool ToersteBase::openDatabase(void)
     return true;
 }
 
-void ToersteBase::queryFileInfo(QString fileNameToSearch)
+void ToersteBase::queryFileInfo(const QString &fileNameToSearch)
 {
     QString fileName;
     QStringList fileNameList;
@@ -93,7 +93,7 @@ void ToersteBase::queryFileInfo(QString fileNameToSearch)
 
 }
 
-bool ToersteBase::isFileIndexed(QFileInfo fileInfo)
+bool ToersteBase::isFileIndexed(const QFileInfo &fileInfo)
 {
     QSqlQuery query;
     QString sqlError;
@@ -127,7 +127,7 @@ bool ToersteBase::isFileIndexed(QFileInfo fileInfo)
 
 }
 
-void ToersteBase::insertFileInfo(QFileInfo fileInfo)
+void ToersteBase::insertFileInfo(const QFileInfo &fileInfo)
 {
     QSqlQuery query;
     QString sqlError;

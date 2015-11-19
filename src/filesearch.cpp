@@ -28,10 +28,10 @@
 #include <QCompleter>
 #include <QEvent>
 #include <QKeyEvent>
+#include <QTimer>
 
 FileSearch::FileSearch(QWidget *parent) : QLineEdit(parent)
 {
-    connect(this,SIGNAL(returnPressed()),this,SLOT(clearCompleter()));
     completer = new QCompleter(this);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     completer->setWrapAround(true);
@@ -40,6 +40,11 @@ FileSearch::FileSearch(QWidget *parent) : QLineEdit(parent)
 
     storeCursor = false;
     restoreCursor = false;
+    timer = new QTimer(this);
+    timer->setSingleShot(true);
+
+    connect(this,SIGNAL(returnPressed()),this,SLOT(clearCompleter()));
+    connect(timer,SIGNAL(timeout()),this,SLOT(userVatulating()));
 }
 
 void FileSearch::clearCompleter(void)
@@ -49,7 +54,7 @@ void FileSearch::clearCompleter(void)
     restoreCursor = false;
 }
 
-void FileSearch::updateList(QStringList list)
+void FileSearch::updateList(const QStringList &list)
 {
     QStringListModel *model;
     model = (QStringListModel*)(completer->model());
@@ -102,9 +107,13 @@ bool FileSearch::event(QEvent* e)
             }
             return true;
         }
+        else if ( keyEvent->key() == Qt::Key_Backspace )
+        {
+            timer->start(1000);
+        }
         else
         {
-            emit keyPressed(this->text());
+            timer->start(250);
         }
     }
     else if ( storeCursor && ( e->type() == QEvent::MouseButtonPress ) )
@@ -122,4 +131,9 @@ bool FileSearch::event(QEvent* e)
     }
 
     return eventReturn;
+}
+
+void FileSearch::userVatulating()
+{
+    emit writingPaused(this->text());
 }

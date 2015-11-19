@@ -31,7 +31,7 @@ class ToerstelliSense : public QObject
     Q_OBJECT
 public:
     explicit ToerstelliSense(QObject *parent = 0, ToersteBase *database = 0);
-    void indexFile(QString path);
+    void indexFile(const QString &path);
 
 signals:
 

@@ -71,6 +71,9 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
     QFont font("Monospace");
     font.setStyleHint(QFont::TypeWriter);
     setFont(font);
+
+    alertBackgroundChangesDefault = true;
+    alertBackgroundChanges = alertBackgroundChangesDefault;
 }
 
 bool CodeEditor::hasContent(void)
@@ -83,12 +86,12 @@ bool CodeEditor::hasChanged(void)
     return contentHasChanged;
 }
 
-void CodeEditor::setContentChanged(bool changed)
+void CodeEditor::setContentChanged(const bool &changed)
 {
     contentHasChanged = changed;
 }
 
-bool CodeEditor::open(QString path)
+bool CodeEditor::open(const QString &path)
 {
     QFileInfo fileInfo(path);
 
@@ -121,7 +124,7 @@ bool CodeEditor::open(QString path)
     if (!file.open(QFile::ReadWrite))
     {
         if (!file.open(QFile::ReadOnly))
-        {           
+        {
             QMessageBox::critical(this, tr("Error"),
                                         tr("Cannot open file:\n\"%1\"\n"
                                            "Permission denied.").arg(path),
@@ -145,6 +148,7 @@ bool CodeEditor::open(QString path)
     file.close();
 
     setFilePath(path);
+    fileSystemWatcher->addPath(path);
 
     setContentChanged(false);
 
@@ -178,11 +182,18 @@ bool CodeEditor::saveAs(void)
         return false;
     }
 
+    setAlertBackgroundChanges(alertBackgroundChangesDefault);
+
     return writeFile(name);
 }
 
-bool CodeEditor::writeFile(QString path)
+bool CodeEditor::writeFile(const QString &path)
 {
+    if ( !filePath.isEmpty() )
+    {
+        fileSystemWatcher->removePath(filePath);
+    }
+
     file.setFileName(path);
 
     if (!file.open(QFile::WriteOnly))
@@ -205,6 +216,8 @@ bool CodeEditor::writeFile(QString path)
 
     setFilePath(path);
 
+    fileSystemWatcher->addPath(path);
+
     return true;
 }
 
@@ -219,7 +232,29 @@ QMessageBox::StandardButton CodeEditor::askToSave(void)
     return static_cast<QMessageBox::StandardButton>(msgBox.exec());
 }
 
-QMessageBox::StandardButton CodeEditor::fileChangedAskToDiscard(QString path)
+QMessageBox::StandardButton CodeEditor::fileChangedAskToLoad(const QString &path)
+{
+    QMessageBox msgBox;
+    int value;
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setText(tr("File:\n\"%1\"\nhas been modified in the background.").arg(path));
+    msgBox.setInformativeText(tr("Do you want to reload it?"));
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::Yes);
+
+    QPushButton *silentLoadButton = msgBox.addButton(tr("Load silently"), QMessageBox::ActionRole);
+
+    value = msgBox.exec();
+
+    if ( msgBox.clickedButton() == silentLoadButton )
+    {
+        value = QMessageBox::Ignore;
+    }
+
+    return static_cast<QMessageBox::StandardButton>(value);
+}
+
+QMessageBox::StandardButton CodeEditor::fileChangedAskToDiscard(const QString &path)
 {
     QMessageBox msgBox;
     msgBox.setIcon(QMessageBox::Question);
@@ -246,6 +281,11 @@ bool CodeEditor::closeFile(void)
         }
     }
 
+    if ( !filePath.isEmpty() )
+    {
+        fileSystemWatcher->removePath(filePath);
+    }
+
     setPlainText("");
     setFilePath("");
     setContentChanged(false);
@@ -263,34 +303,57 @@ void CodeEditor::setIndentSize(int newIndentSize)
     indentSize = newIndentSize;
 }
 
-void CodeEditor::fileChanged(QString path)
+void CodeEditor::setAlertBackgroundChangesDefault(bool newAlertChanges)
 {
+    alertBackgroundChangesDefault = newAlertChanges;
+}
+
+void CodeEditor::setAlertBackgroundChanges(bool newAlertChanges)
+{
+    alertBackgroundChanges = newAlertChanges;
+}
+
+void CodeEditor::fileChanged(const QString &path)
+{
+    fileSystemWatcher->removePath(filePath);
+
     if ( contentHasChanged )
     {
         if ( fileChangedAskToDiscard(path) == QMessageBox::Discard )
         {
+            setContentChanged(false);
             open(path);
+            return;
+        }
+    }
+    else if ( alertBackgroundChanges )
+    {
+        QMessageBox::StandardButton reply = fileChangedAskToLoad(path);
+        if ( reply == QMessageBox::Yes )
+        {
+            open(path);
+            return;
+        }
+        else if ( reply == QMessageBox::Ignore )
+        {
+            setAlertBackgroundChanges(false);
+            open(path);
+            return;
         }
     }
     else
     {
         open(path);
+        return;
     }
+
+    fileSystemWatcher->addPath(path);
 }
 
-void CodeEditor::setFilePath(QString path)
+void CodeEditor::setFilePath(const QString &path)
 {
     if (filePath != path)
     {
-        if ( path.isEmpty() && !filePath.isEmpty() )
-        {
-            fileSystemWatcher->removePath(filePath);
-        }
-        else
-        {
-            fileSystemWatcher->addPath(path);
-        }
-
         filePath = path;
         emit filePathChanged(path);
     }
