@@ -55,8 +55,8 @@ ToolArea::ToolArea(QWidget *parent, ToersteBase *database) : QWidget(parent)
 
     connect(leftFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
     connect(rightFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
-    connect(leftFileSearch,SIGNAL(writingPaused(QString)),toersteBase,SLOT(queryFileInfo(QString)));
-    connect(rightFileSearch,SIGNAL(writingPaused(QString)),toersteBase,SLOT(queryFileInfo(QString)));
+    connect(leftFileSearch,SIGNAL(writingPaused(QString)),toersteBase->worker(),SLOT(queryFileInfo(QString)));
+    connect(rightFileSearch,SIGNAL(writingPaused(QString)),toersteBase->worker(),SLOT(queryFileInfo(QString)));
 
     rightCodeEditor->setFocus();
 

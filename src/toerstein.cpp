@@ -38,24 +38,9 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     toersteBase = new ToersteBase(this);
     toerstelliSense = new ToerstelliSense(this,toersteBase);
 
-    QMenuBar *menuBar = new QMenuBar(this);
+    connect(this,SIGNAL(fileLoaded(QString)),toerstelliSense->worker(),SLOT(indexFile(QString)));
 
-    /* Create File menu */
-    QMenu *fileMenu = menuBar->addMenu("File");
-
-    fileMenu->addAction( tr("New &Tab"), this, SLOT(createNewTab()), QKeySequence(tr("Ctrl+T", "File|New Tab") ) );
-    fileMenu->addAction( tr("&New"), this, SLOT(createNewFile()), QKeySequence(tr("Ctrl+N", "File|New File") ) );
-    fileMenu->addAction( tr("&Open"), this, SLOT(open()), QKeySequence(tr("Ctrl+O", "File|Open File") ) );
-    fileMenu->addAction( tr("Enter File &Path"), this, SLOT(search()), QKeySequence(tr("Ctrl+P", "File|Enter File Path") ) );
-    fileMenu->addAction( tr("&Save"), this, SLOT(save()), QKeySequence(tr("Ctrl+S", "File|Save File") ) );
-    fileMenu->addAction( tr("Save As..."), this, SLOT(saveAs()) );
-    fileMenu->addAction( tr("&Close File"), this, SLOT(closeFile()), QKeySequence(tr("Ctrl+W", "File|Close File") ) );
-    fileMenu->addAction( tr("&Quit"), this, SLOT(close()), QKeySequence(tr("Ctrl+Q", "File|Quit") ) );
-
-    QMenu *viewMenu = menuBar->addMenu("View");
-    viewMenu->addAction( tr("&Toggle Diff View"), this, SLOT(toggleViewMode()), QKeySequence(tr("Ctrl+D", "Toggle Diff View|Quit") ) );
-
-    this->setMenuBar(menuBar);
+    createMenuBar();
 
     /* Create tab view */
     tabWidget = new QTabWidget(this);
@@ -97,6 +82,28 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     {
         createNewFile();
     }
+}
+
+void Toerstein::createMenuBar(void)
+{
+    QMenuBar *menuBar = new QMenuBar(this);
+
+    /* Create File menu */
+    QMenu *fileMenu = menuBar->addMenu("File");
+
+    fileMenu->addAction( tr("New &Tab"), this, SLOT(createNewTab()), QKeySequence(tr("Ctrl+T", "File|New Tab") ) );
+    fileMenu->addAction( tr("&New"), this, SLOT(createNewFile()), QKeySequence(tr("Ctrl+N", "File|New File") ) );
+    fileMenu->addAction( tr("&Open"), this, SLOT(open()), QKeySequence(tr("Ctrl+O", "File|Open File") ) );
+    fileMenu->addAction( tr("Enter File &Path"), this, SLOT(search()), QKeySequence(tr("Ctrl+P", "File|Enter File Path") ) );
+    fileMenu->addAction( tr("&Save"), this, SLOT(save()), QKeySequence(tr("Ctrl+S", "File|Save File") ) );
+    fileMenu->addAction( tr("Save As..."), this, SLOT(saveAs()) );
+    fileMenu->addAction( tr("&Close File"), this, SLOT(closeFile()), QKeySequence(tr("Ctrl+W", "File|Close File") ) );
+    fileMenu->addAction( tr("&Quit"), this, SLOT(close()), QKeySequence(tr("Ctrl+Q", "File|Quit") ) );
+
+    QMenu *viewMenu = menuBar->addMenu("View");
+    viewMenu->addAction( tr("&Toggle Diff View"), this, SLOT(toggleViewMode()), QKeySequence(tr("Ctrl+D", "Toggle Diff View|Quit") ) );
+
+    this->setMenuBar(menuBar);
 }
 
 ToolArea* Toerstein::createToolArea(void)
@@ -247,7 +254,7 @@ void Toerstein::setRightFilePath(const QString &path)
         else
         {
             tabWidget->setTabText(tabIndex,QFileInfo(path).fileName());
-            toerstelliSense->indexFile(path);
+            emit fileLoaded(path);
         }
     }
 }

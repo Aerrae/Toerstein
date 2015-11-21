@@ -19,47 +19,31 @@
 **
 *************************************************************************************/
 
-#ifndef TOERSTEIN_H
-#define TOERSTEIN_H
-
 #include "toerstebase.h"
-#include "toerstellisense.h"
-#include "toolarea.h"
+#include "toerstellisenseworker.h"
 
-#include <QMainWindow>
+#include <QDir>
 
-class Toerstein : public QMainWindow
+ToerstelliSenseWorker::ToerstelliSenseWorker(ToersteBase *database)
 {
-    Q_OBJECT
+    setObjectName("ToerstelliSense");
+    toersteBase = database;
 
-public:
-    explicit Toerstein(QWidget *parent = 0);
-    ~Toerstein();
+    connect(this,SIGNAL(indexingFile(QString)),toersteBase->worker(),SLOT(insertFileInfo(QString)));
+}
 
-private slots:
-    void createNewFile(void);
-    void createNewTab(void);
-    void open(void);
-    void search(void);
-    void save(void);
-    void saveAs(void);
-    void closeFile(void);
-    void toggleViewMode(void);
-    void setLeftFilePath(const QString &path);
-    void setRightFilePath(const QString &path);
+void ToerstelliSenseWorker::indexFile(const QString &path)
+{
+    QFileInfo fileInfo = QFileInfo(path);
+    QStringList fileNameList;
+    QString canonicalPath = fileInfo.canonicalPath();
+    QDir directory(canonicalPath);
 
-signals:
-    void fileLoaded(const QString &path);
+    fileNameList = directory.entryList(QDir::Files, QDir::Name);
 
-private:
-    void createMenuBar(void);
-    ToolArea* createToolArea(void);
-    bool isFileValid(const QString &path);
-    void open(const QString &path);
-    void open(const QString &path1, const QString &path2);
-    QTabWidget *tabWidget;
-    ToersteBase *toersteBase;
-    ToerstelliSense *toerstelliSense;
-};
-
-#endif // TOERSTEIN_H
+    foreach ( QString fileName, fileNameList )
+    {
+        QString filePath = canonicalPath + QDir::separator() + fileName;
+        emit indexingFile(filePath);
+    }
+}

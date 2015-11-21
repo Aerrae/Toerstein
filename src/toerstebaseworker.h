@@ -19,47 +19,33 @@
 **
 *************************************************************************************/
 
-#ifndef TOERSTEIN_H
-#define TOERSTEIN_H
+#ifndef TOERSTEBASEWORKER_H
+#define TOERSTEBASEWORKER_H
 
-#include "toerstebase.h"
-#include "toerstellisense.h"
-#include "toolarea.h"
+#include <QObject>
+#include <QFileInfo>
+#include <QSqlDatabase>
 
-#include <QMainWindow>
-
-class Toerstein : public QMainWindow
+class ToersteBaseWorker : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit Toerstein(QWidget *parent = 0);
-    ~Toerstein();
+    explicit ToersteBaseWorker(void);
+    ~ToersteBaseWorker();
 
-private slots:
-    void createNewFile(void);
-    void createNewTab(void);
-    void open(void);
-    void search(void);
-    void save(void);
-    void saveAs(void);
-    void closeFile(void);
-    void toggleViewMode(void);
-    void setLeftFilePath(const QString &path);
-    void setRightFilePath(const QString &path);
+public slots:
+    void queryFileInfo(const QString &fileNameToSearch);
+    void insertFileInfo(const QString &path);
+    void openDatabase(void);
 
 signals:
-    void fileLoaded(const QString &path);
+
+private slots:
+    bool isFileIndexed(const QFileInfo &fileInfo);
 
 private:
-    void createMenuBar(void);
-    ToolArea* createToolArea(void);
-    bool isFileValid(const QString &path);
-    void open(const QString &path);
-    void open(const QString &path1, const QString &path2);
-    QTabWidget *tabWidget;
-    ToersteBase *toersteBase;
-    ToerstelliSense *toerstelliSense;
+    QSqlDatabase fileDatabase;
 };
 
-#endif // TOERSTEIN_H
+#endif // TOERSTEBASEWORKER_H

@@ -18,13 +18,17 @@ SOURCES += main.cpp\
     toolarea.cpp \
     filesearch.cpp \
     toerstebase.cpp \
-    toerstellisense.cpp
+    toerstellisense.cpp \
+    toerstebaseworker.cpp \
+    toerstellisenseworker.cpp
 
 HEADERS  += toerstein.h \
     codeeditor.h \
     toolarea.h \
     filesearch.h \
     toerstebase.h \
-    toerstellisense.h
+    toerstellisense.h \
+    toerstebaseworker.h \
+    toerstellisenseworker.h
 
 FORMS    +=

@@ -22,9 +22,9 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
+#include "toerstebaseworker.h"
+
 #include <QObject>
-#include <QFileInfo>
-#include <QSqlDatabase>
 #include <QThread>
 
 class ToersteBase : public QObject
@@ -33,44 +33,20 @@ class ToersteBase : public QObject
 public:
     explicit ToersteBase(QObject *parent = 0);
      ~ToersteBase();
+    ToersteBaseWorker *worker(void);
     bool isFileIndexed(const QFileInfo &fileInfo);
 
 signals:
     void openDatabase(void);
     void closeDatabase(void);
-    void newFileNameQuery(QObject* sender, const QString &filename);
-    void newFileInsert(const QString &path);
 
 public slots:
-    void queryFileInfo(const QString &filename);
-    void insertFileInfo(const QString &path);
 
 private slots:
 
 private:
     QThread toersteBaseThread;
-};
-
-class ToersteBaseWorker : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit ToersteBaseWorker(void);
-    ~ToersteBaseWorker();
-
-public slots:
-    void queryFileInfo(QObject* sender, const QString &fileNameToSearch);
-    void insertFileInfo(const QString &path);
-    void openDatabase(void);
-
-signals:
-
-private slots:
-    bool isFileIndexed(const QFileInfo &fileInfo);
-
-private:
-    QSqlDatabase fileDatabase;
+    ToersteBaseWorker *toersteBaseWorker;
 };
 
 #endif // DATABASE_H

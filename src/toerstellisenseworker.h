@@ -19,47 +19,27 @@
 **
 *************************************************************************************/
 
-#ifndef TOERSTEIN_H
-#define TOERSTEIN_H
+#ifndef TOERSTELLISENSEWORKER_H
+#define TOERSTELLISENSEWORKER_H
 
 #include "toerstebase.h"
-#include "toerstellisense.h"
-#include "toolarea.h"
 
-#include <QMainWindow>
+#include <QObject>
 
-class Toerstein : public QMainWindow
+class ToerstelliSenseWorker : public QObject
 {
     Q_OBJECT
-
 public:
-    explicit Toerstein(QWidget *parent = 0);
-    ~Toerstein();
-
-private slots:
-    void createNewFile(void);
-    void createNewTab(void);
-    void open(void);
-    void search(void);
-    void save(void);
-    void saveAs(void);
-    void closeFile(void);
-    void toggleViewMode(void);
-    void setLeftFilePath(const QString &path);
-    void setRightFilePath(const QString &path);
+    explicit ToerstelliSenseWorker(ToersteBase *database);
 
 signals:
-    void fileLoaded(const QString &path);
+    void indexingFile(const QString &path);
+
+public slots:
+    void indexFile(const QString &path);
 
 private:
-    void createMenuBar(void);
-    ToolArea* createToolArea(void);
-    bool isFileValid(const QString &path);
-    void open(const QString &path);
-    void open(const QString &path1, const QString &path2);
-    QTabWidget *tabWidget;
     ToersteBase *toersteBase;
-    ToerstelliSense *toerstelliSense;
 };
 
-#endif // TOERSTEIN_H
+#endif // TOERSTELLISENSEWORKER_H

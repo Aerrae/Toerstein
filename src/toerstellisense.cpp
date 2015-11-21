@@ -26,12 +26,22 @@
 
 ToerstelliSense::ToerstelliSense(QObject *parent, ToersteBase *database) : QObject(parent)
 {
-    toersteBase = database;
+    toerstelliSenseWorker = new ToerstelliSenseWorker(database);
+    toerstelliSenseWorker->moveToThread(&toerstelliSenseThread);
 
-    connect(this,SIGNAL(indexingFile(QString)),toersteBase,SLOT(insertFileInfo(QString)));
+    connect(&toerstelliSenseThread, SIGNAL(finished()), toerstelliSenseWorker, SLOT(deleteLater()));
+
+    toerstelliSenseThread.start();
 }
 
-void ToerstelliSense::indexFile(const QString &path)
+ToerstelliSenseWorker* ToerstelliSense::worker(void)
 {
-    emit indexingFile(path);
+    return toerstelliSenseWorker;
 }
+
+ToerstelliSense::~ToerstelliSense()
+{
+    toerstelliSenseThread.quit();
+    toerstelliSenseThread.wait();
+}
+

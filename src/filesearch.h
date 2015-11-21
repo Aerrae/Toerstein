@@ -25,6 +25,8 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QCompleter>
+#include <QStringListModel>
+#include <QDirModel>
 #include <QTimer>
 
 class FileSearch : public QLineEdit
@@ -44,6 +46,8 @@ protected:
 
 private:
     QCompleter *completer;
+    QDirModel *dirModel;
+    QStringListModel *stringListModel;
     bool storeCursor;
     bool restoreCursor;
     int cursorOldPos;

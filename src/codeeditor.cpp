@@ -99,9 +99,11 @@ bool CodeEditor::open(const QString &path)
     {
         if ( !fileInfo.isFile() )
         {
+#if 0
             QMessageBox::warning(this, tr("Error"),
                                        tr("\"%1\" is a folder.").arg(path),
                                        QMessageBox::Ok );
+#endif
         return false;
         }
     }
@@ -151,6 +153,8 @@ bool CodeEditor::open(const QString &path)
     fileSystemWatcher->addPath(path);
 
     setContentChanged(false);
+
+    this->setFocus();
 
     return true;
 }

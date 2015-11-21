@@ -38,6 +38,9 @@ FileSearch::FileSearch(QWidget *parent) : QLineEdit(parent)
     completer->setCompletionMode(QCompleter::InlineCompletion);
     this->setCompleter(completer);
 
+    dirModel = new QDirModel(this);
+    stringListModel = new QStringListModel(this);
+
     storeCursor = false;
     restoreCursor = false;
     timer = new QTimer(this);
@@ -56,21 +59,18 @@ void FileSearch::clearCompleter(void)
 
 void FileSearch::updateList(const QStringList &list)
 {
-    QStringListModel *model;
-    model = (QStringListModel*)(completer->model());
-
     if ( list.isEmpty() )
     {
         return;
     }
 
-    if( !model )
+    stringListModel->setStringList(list);
+
+    if ( completer->model() != stringListModel )
     {
-        model = new QStringListModel(this);
+        completer->setModel(stringListModel);
     }
 
-    model->setStringList(list);
-    completer->setModel(model);
     completer->complete();
 }
 
@@ -135,5 +135,26 @@ bool FileSearch::event(QEvent* e)
 
 void FileSearch::userVatulating()
 {
-    emit writingPaused(this->text());
+    QRegExp path_unix_rx,path_win_rx;
+
+    /* Check if search fields starts with "/" or "x:" */
+    path_unix_rx.setPattern("^\\/");
+    path_win_rx.setPattern("^[a-zA-Z]:");
+
+    if ( ( path_unix_rx.indexIn(this->text()) != -1 ) ||
+        ( path_win_rx.indexIn(this->text()) != -1 ) )
+    {
+        /* Switch to directory autocompleter model */
+        if (completer->model() != dirModel )
+        {
+            completer->setModel(dirModel);
+        }
+    }
+    else
+    {
+        /* updateList will change autocompleter model to stringListModel
+         * after database indicates results for the search
+         */
+        emit writingPaused(this->text());
+    }
 }
