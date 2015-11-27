@@ -76,7 +76,7 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
     alertBackgroundChanges = alertBackgroundChangesDefault;
 }
 
-bool CodeEditor::hasContent(void)
+bool CodeEditor::hasUnsavedContent(void)
 {
     return ( !filePath.isEmpty() || contentHasChanged );
 }
@@ -113,6 +113,7 @@ bool CodeEditor::open(const QString &path)
                                     tr("File:\n\"%1\"\n"
                                        "does not exist.").arg(path),
                                        QMessageBox::Ok );
+        emit fileDoesNotExist(path);
         return false;
     }
 
@@ -166,14 +167,8 @@ bool CodeEditor::save(void)
         return saveAs();
     }
     else
-    {   if ( contentHasChanged )
-        {
-            return writeFile(filePath);
-        }
-        else
-        {
-            return true;
-        }
+    {
+        return writeFile(filePath);
     }
 }
 
@@ -320,6 +315,13 @@ void CodeEditor::setAlertBackgroundChanges(bool newAlertChanges)
 void CodeEditor::fileChanged(const QString &path)
 {
     fileSystemWatcher->removePath(filePath);
+
+    QFileInfo fileInfo(path);
+
+    if ( !fileInfo.exists() )
+    {
+        return;
+    }
 
     if ( contentHasChanged )
     {

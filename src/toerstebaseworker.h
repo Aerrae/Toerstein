@@ -35,14 +35,15 @@ public:
     ~ToersteBaseWorker();
 
 public slots:
+    void openDatabase(void);
     void queryFileInfo(const QString &fileNameToSearch);
     void insertFileInfo(const QString &path);
-    void openDatabase(void);
+    void deleteFileInfo(const QString &path);
 
 signals:
 
 private slots:
-    bool isFileIndexed(const QFileInfo &fileInfo);
+    bool isFileIndexed(const QString &path);
 
 private:
     QSqlDatabase fileDatabase;

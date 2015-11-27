@@ -23,10 +23,10 @@
 
 #include "toerstebase.h"
 #include "codeeditor.h"
+#include "tabview.h"
 #include "toolarea.h"
 
 #include <QMenuBar>
-#include <QTabWidget>
 #include <QFileDialog>
 #include <QDebug>
 #include <QCoreApplication>
@@ -43,8 +43,11 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     createMenuBar();
 
     /* Create tab view */
-    tabWidget = new QTabWidget(this);
-    setCentralWidget(tabWidget);
+    tabView = new TabView(this);
+    tabView->setTabsClosable(true);
+    setCentralWidget(tabView);
+
+    connect(tabView,SIGNAL(tabCloseRequested(int)),this,SLOT(closeTab(int)));
 
     QCommandLineOption diffMode(QStringList() << "d" << "diff");
     QCommandLineParser parser;
@@ -117,14 +120,14 @@ ToolArea* Toerstein::createToolArea(void)
 void Toerstein::createNewFile(void)
 {
     ToolArea *toolArea = createToolArea();
-    tabWidget->setCurrentIndex(tabWidget->addTab(toolArea,"New file"));
+    tabView->setCurrentIndex(tabView->addTab(toolArea,"New file"));
     toolArea->setFocusToRightCodeEditor();
 }
 
 void Toerstein::createNewTab(void)
 {
     ToolArea *toolArea = createToolArea();
-    tabWidget->setCurrentIndex(tabWidget->addTab(toolArea,"New tab"));
+    tabView->setCurrentIndex(tabView->addTab(toolArea,"New tab"));
     toolArea->setFocusToRightFileSearch();
 }
 
@@ -162,14 +165,14 @@ void Toerstein::open(const QString &path)
         return;
     }
 
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
 
     if ( !toolArea->open(path) )
     {
         createNewTab();
     }
 
-    toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->open(path);
 }
 
@@ -180,46 +183,68 @@ void Toerstein::open(const QString &path1, const QString &path2)
         return;
     }
 
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
 
     if ( !toolArea->open(path1, path2) )
     {
         createNewTab();
     }
 
-    toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->open(path1, path2);
 }
 
 void Toerstein::search(void)
 {
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->search();
 }
 
 void Toerstein::save(void)
 {
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->save();
 }
 void Toerstein::saveAs(void)
 {
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->saveAs();
 }
 
 void Toerstein::closeFile(void)
 {
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    closeTab(tabView->currentIndex());
+}
+
+void Toerstein::closeTab(int tabIndex)
+{
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->widget(tabIndex));
+    ToolArea* previousToolArea = NULL;
+
+    if ( tabView->widget(tabIndex) != tabView->currentWidget() )
+    {
+        previousToolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
+    }
+
+    if ( toolArea->hasUnsavedContent() )
+    {
+        tabView->setCurrentIndex(tabIndex);
+        tabView->currentWidget()->setFocus();
+    }
 
     if ( toolArea->closeFile() )
     {
-        tabWidget->removeTab(tabWidget->currentIndex());
+        tabView->removeTab(tabIndex);
     }
 
-    if ( tabWidget->currentWidget() )
+    if ( previousToolArea )
     {
-        tabWidget->currentWidget()->setFocus();
+        tabView->setCurrentIndex(tabView->indexOf(previousToolArea));
+        tabView->currentWidget()->setFocus();
+    }
+    else if ( tabView->currentWidget() )
+    {
+        tabView->currentWidget()->setFocus();
     }
     else
     {
@@ -229,7 +254,7 @@ void Toerstein::closeFile(void)
 
 void Toerstein::toggleViewMode(void)
 {
-    qobject_cast<ToolArea *>(tabWidget->currentWidget())->toggleViewMode();
+    qobject_cast<ToolArea *>(tabView->currentWidget())->toggleViewMode();
 }
 
 void Toerstein::setLeftFilePath(const QString &path)
@@ -243,17 +268,17 @@ void Toerstein::setRightFilePath(const QString &path)
 
     qDebug() << "Toerstein: Right filepath set to" << path;
 
-    int tabIndex = tabWidget->indexOf(toolArea);
+    int tabIndex = tabView->indexOf(toolArea);
 
     if ( tabIndex >= 0 )
     {
         if ( path.isEmpty() )
         {
-            tabWidget->setTabText(tabIndex,"New tab");
+            tabView->setTabText(tabIndex,"New tab");
         }
         else
         {
-            tabWidget->setTabText(tabIndex,QFileInfo(path).fileName());
+            tabView->setTabText(tabIndex,QFileInfo(path).fileName());
             emit fileLoaded(path);
         }
     }

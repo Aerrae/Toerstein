@@ -41,6 +41,7 @@ public slots:
     void save(void);
     void saveAs(void);
     bool closeFile(void);
+    bool hasUnsavedContent(void);
     void toggleViewMode(void);
     void setFocusToLeftFileSearch(void);
     void setFocusToRightFileSearch(void);

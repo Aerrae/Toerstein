@@ -25,6 +25,7 @@
 #include "toerstebase.h"
 #include "toerstellisense.h"
 #include "toolarea.h"
+#include "tabview.h"
 
 #include <QMainWindow>
 
@@ -44,6 +45,7 @@ private slots:
     void save(void);
     void saveAs(void);
     void closeFile(void);
+    void closeTab(int tabIndex);
     void toggleViewMode(void);
     void setLeftFilePath(const QString &path);
     void setRightFilePath(const QString &path);
@@ -57,7 +59,7 @@ private:
     bool isFileValid(const QString &path);
     void open(const QString &path);
     void open(const QString &path1, const QString &path2);
-    QTabWidget *tabWidget;
+    TabView *tabView;
     ToersteBase *toersteBase;
     ToerstelliSense *toerstelliSense;
 };

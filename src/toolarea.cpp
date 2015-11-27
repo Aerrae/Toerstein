@@ -52,9 +52,12 @@ ToolArea::ToolArea(QWidget *parent, ToersteBase *database) : QWidget(parent)
     connect(rightCodeEditor,SIGNAL(filePathChanged(QString)),rightFileSearch,SLOT(setText(QString)));
     connect(leftCodeEditor,SIGNAL(filePathChanged(QString)),this,SLOT(setLeftFilePath(QString)));
     connect(rightCodeEditor,SIGNAL(filePathChanged(QString)),this,SLOT(setRightFilePath(QString)));
+    connect(leftCodeEditor,SIGNAL(fileDoesNotExist(QString)),toersteBase->worker(),SLOT(deleteFileInfo(QString)));
+    connect(rightCodeEditor,SIGNAL(fileDoesNotExist(QString)),toersteBase->worker(),SLOT(deleteFileInfo(QString)));
 
     connect(leftFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
     connect(rightFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
+
     connect(leftFileSearch,SIGNAL(writingPaused(QString)),toersteBase->worker(),SLOT(queryFileInfo(QString)));
     connect(rightFileSearch,SIGNAL(writingPaused(QString)),toersteBase->worker(),SLOT(queryFileInfo(QString)));
 
@@ -67,14 +70,14 @@ bool ToolArea::open(const QString &path)
 {
     if ( leftCodeEditor->hasFocus() || leftFileSearch->hasFocus() )
     {
-        if ( !leftCodeEditor->hasContent() )
+        if ( !leftCodeEditor->hasUnsavedContent() )
         {
             return leftCodeEditor->open(path);
         }
     }
     else
     {
-        if ( !rightCodeEditor->hasContent() )
+        if ( !rightCodeEditor->hasUnsavedContent() )
         {
             return rightCodeEditor->open(path);
         }
@@ -85,7 +88,7 @@ bool ToolArea::open(const QString &path)
 
 bool ToolArea::open(const QString &path1, const QString &path2)
 {
-    if ( leftCodeEditor->hasContent() || rightCodeEditor->hasContent() )
+    if ( hasUnsavedContent() )
     {
         return false;
     }
@@ -150,13 +153,18 @@ bool ToolArea::closeFile(void)
         }
     }
 
-    if ( leftCodeEditor->hasContent() || rightCodeEditor->hasContent() )
+    return !hasUnsavedContent();
+}
+
+bool ToolArea::hasUnsavedContent(void)
+{
+    if ( leftCodeEditor->hasUnsavedContent() || rightCodeEditor->hasUnsavedContent() )
     {
-        return false;
+        return true;
     }
     else
     {
-        return true;
+        return false;
     }
 }
 
