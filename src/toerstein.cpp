@@ -121,14 +121,14 @@ void Toerstein::createNewFile(void)
 {
     ToolArea *toolArea = createToolArea();
     tabView->setCurrentIndex(tabView->addTab(toolArea,"New file"));
-    toolArea->setFocusToRightCodeEditor();
+    toolArea->setFocusToCodeEditor(ToolAreaRightSide);
 }
 
 void Toerstein::createNewTab(void)
 {
     ToolArea *toolArea = createToolArea();
     tabView->setCurrentIndex(tabView->addTab(toolArea,"New tab"));
-    toolArea->setFocusToRightFileSearch();
+    toolArea->setFocusToFileSearch(ToolAreaRightSide);
 }
 
 bool Toerstein::isFileValid(const QString &path)
@@ -160,12 +160,29 @@ void Toerstein::open(void)
 
 void Toerstein::open(const QString &path)
 {
+    ToolArea* toolArea;
+    ToolAreaSide side;
+
     if (!isFileValid(path))
     {
         return;
     }
 
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
+    for ( int i = 0; i < tabView->count(); i++ )
+    {
+        toolArea = qobject_cast<ToolArea *>(tabView->widget(i));
+
+        side = toolArea->isFileOpen(path);
+
+        if ( side != ToolAreaNone )
+        {
+            tabView->setCurrentIndex(i);
+            toolArea->setFocusToCodeEditor(side);
+            return;
+        }
+    }
+
+    toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
 
     if ( !toolArea->open(path) )
     {

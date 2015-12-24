@@ -185,24 +185,33 @@ void ToolArea::toggleViewMode(void)
     }
 }
 
-void ToolArea::setFocusToLeftFileSearch(void)
+void ToolArea::setFocusToFileSearch(ToolAreaSide side)
 {
-    leftFileSearch->setFocus();
+    if ( side == ToolAreaLeftSide )
+    {
+        leftFileSearch->setFocus();
+    }
+    else
+    {
+        rightFileSearch->setFocus();
+    }
 }
 
-void ToolArea::setFocusToRightFileSearch(void)
+void ToolArea::setFocusToCodeEditor(ToolAreaSide side)
 {
-    rightFileSearch->setFocus();
-}
+    if ( side == ToolAreaLeftSide )
+    {
+        if ( !diffModeEnabled )
+        {
+            toggleViewMode();
+        }
 
-void ToolArea::setFocusToLeftCodeEditor(void)
-{
-    leftCodeEditor->setFocus();
-}
-
-void ToolArea::setFocusToRightCodeEditor(void)
-{
-    rightCodeEditor->setFocus();
+        leftCodeEditor->setFocus();
+    }
+    else
+    {
+        rightCodeEditor->setFocus();
+    }
 }
 
 void ToolArea::setLeftFilePath(const QString &path)
@@ -247,4 +256,18 @@ void ToolArea::fileSearchPathOpen(void)
     {
         rightCodeEditor->open(path);
     }
+}
+
+ToolAreaSide ToolArea::isFileOpen(const QString &path)
+{
+    if ( leftCodeEditor->filePath() == path )
+    {
+        return ToolAreaLeftSide;
+    }
+    else if ( rightCodeEditor->filePath() == path )
+    {
+        return ToolAreaRightSide;
+    }
+
+   return ToolAreaNone;
 }

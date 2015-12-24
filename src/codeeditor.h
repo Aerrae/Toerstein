@@ -62,6 +62,7 @@ class CodeEditor : public QPlainTextEdit
 public:
     CodeEditor(QWidget *parent = 0);
 
+    QString filePath(void);
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     int lineNumberAreaWidth();
     bool hasUnsavedContent(void);
@@ -105,7 +106,7 @@ private:
     QMessageBox::StandardButton fileChangedAskToDiscard(const QString &path);
     QWidget *lineNumberArea;
     bool contentHasChanged;
-    QString filePath;
+    QString m_filePath;
     QFile file;
     bool indentWithSpaces;
     int indentSize;

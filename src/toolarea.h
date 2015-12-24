@@ -30,6 +30,13 @@
 #include <QGridLayout>
 #include <QLineEdit>
 
+enum ToolAreaSide
+  {
+     ToolAreaNone,
+     ToolAreaLeftSide,
+     ToolAreaRightSide
+  };
+
 class ToolArea : public QWidget
 {
     Q_OBJECT
@@ -43,10 +50,9 @@ public slots:
     bool closeFile(void);
     bool hasUnsavedContent(void);
     void toggleViewMode(void);
-    void setFocusToLeftFileSearch(void);
-    void setFocusToRightFileSearch(void);
-    void setFocusToLeftCodeEditor(void);
-    void setFocusToRightCodeEditor(void);
+    void setFocusToFileSearch(ToolAreaSide side);
+    void setFocusToCodeEditor(ToolAreaSide side);
+    ToolAreaSide isFileOpen(const QString &path);
 
 public:
     bool open(const QString &path);
