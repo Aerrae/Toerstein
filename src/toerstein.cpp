@@ -27,6 +27,7 @@
 #include "toolarea.h"
 
 #include <QMenuBar>
+#include <QShortcut>
 #include <QFileDialog>
 #include <QDebug>
 #include <QCoreApplication>
@@ -41,6 +42,7 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     connect(this,SIGNAL(fileLoaded(QString)),toerstelliSense->worker(),SLOT(indexFile(QString)));
 
     createMenuBar();
+    createShortcuts();
 
     /* Create tab view */
     tabView = new TabView(this);
@@ -87,26 +89,85 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     }
 }
 
+bool Toerstein::event(QEvent* e)
+{
+    if ( e->type() == QEvent::KeyPress )
+    {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+
+        prevKey = static_cast<Qt::Key>(keyEvent->key());
+        prevModifier = keyEvent->modifiers();
+    }
+    else if ( e->type() == QEvent::KeyRelease )
+    {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+
+        /* Check if only alt-key has been pressed and released */
+        if ( ( prevKey == Qt::Key_Alt ) &&
+            ( ( prevModifier == Qt::NoModifier ) ||
+              ( prevModifier == Qt::AltModifier ) ) &&
+            ( keyEvent->key() == Qt::Key_Alt ) &&
+            ( ( keyEvent->modifiers() == Qt::NoModifier ) ||
+              ( keyEvent->modifiers() == Qt::AltModifier ) ) )
+        {
+            toggleMenuBarVisibility();
+            return true;
+        }
+    }
+
+    return QMainWindow::event(e);
+}
+
 void Toerstein::createMenuBar(void)
 {
     QMenuBar *menuBar = new QMenuBar(this);
+    menuBar->setVisible(false);
 
     /* Create File menu */
-    QMenu *fileMenu = menuBar->addMenu("File");
+    QMenu *fileMenu = menuBar->addMenu(tr("&File"));
 
-    fileMenu->addAction( tr("New &Tab"), this, SLOT(createNewTab()), QKeySequence(tr("Ctrl+T", "File|New Tab") ) );
-    fileMenu->addAction( tr("&New"), this, SLOT(createNewFile()), QKeySequence(tr("Ctrl+N", "File|New File") ) );
-    fileMenu->addAction( tr("&Open"), this, SLOT(open()), QKeySequence(tr("Ctrl+O", "File|Open File") ) );
-    fileMenu->addAction( tr("Enter File &Path"), this, SLOT(search()), QKeySequence(tr("Ctrl+P", "File|Enter File Path") ) );
-    fileMenu->addAction( tr("&Save"), this, SLOT(save()), QKeySequence(tr("Ctrl+S", "File|Save File") ) );
+    fileMenu->addAction( tr("New &Tab"), this, SLOT(createNewTab()) );
+    fileMenu->addAction( tr("&New"), this, SLOT(createNewFile()) );
+    fileMenu->addAction( tr("&Open"), this, SLOT(open()) );
+    fileMenu->addAction( tr("Enter File &Path"), this, SLOT(search()) );
+    fileMenu->addAction( tr("&Save"), this, SLOT(save()) );
     fileMenu->addAction( tr("Save As..."), this, SLOT(saveAs()) );
-    fileMenu->addAction( tr("&Close File"), this, SLOT(closeFile()), QKeySequence(tr("Ctrl+W", "File|Close File") ) );
-    fileMenu->addAction( tr("&Quit"), this, SLOT(close()), QKeySequence(tr("Ctrl+Q", "File|Quit") ) );
+    fileMenu->addAction( tr("&Close File"), this, SLOT(closeFile()) );
+    fileMenu->addAction( tr("&Quit"), this, SLOT(close()) );
 
-    QMenu *viewMenu = menuBar->addMenu("View");
-    viewMenu->addAction( tr("&Toggle Diff View"), this, SLOT(toggleViewMode()), QKeySequence(tr("Ctrl+D", "Toggle Diff View|Quit") ) );
+    QMenu *viewMenu = menuBar->addMenu(tr("&View"));
+    viewMenu->addAction( tr("Toggle &Diff View"), this, SLOT(toggleViewMode()) );
 
     this->setMenuBar(menuBar);
+}
+
+void Toerstein::createShortcuts(void)
+{
+    QShortcut *shortcut;
+
+    /* In QMenuBar shortcuts won't work if menuBar is not visible,
+     * so we'll add them separately here
+     */
+
+    /* Shortcuts to File-menu */
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+T", "File|New Tab")),this,SLOT(createNewTab()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+N", "File|New File")),this,SLOT(createNewFile()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+O", "File|Open File")),this,SLOT(open()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+P", "File|Enter File Path") ),this,SLOT(search()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+S", "File|Save File") ),this,SLOT(save()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+W", "File|Close File") ),this,SLOT(closeFile()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+Q", "File|Quit")),this,SLOT(close()));
+    shortcut->setAutoRepeat(false);
+
+    /* Shortcuts to View-menu */
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+D", "Toggle Diff View|Quit")),this,SLOT(toggleViewMode()));
+    shortcut->setAutoRepeat(false);
 }
 
 ToolArea* Toerstein::createToolArea(void)
@@ -272,6 +333,11 @@ void Toerstein::closeTab(int tabIndex)
 void Toerstein::toggleViewMode(void)
 {
     qobject_cast<ToolArea *>(tabView->currentWidget())->toggleViewMode();
+}
+
+void Toerstein::toggleMenuBarVisibility(void)
+{
+    menuBar()->setVisible( !menuBar()->isVisible() );
 }
 
 void Toerstein::setLeftFilePath(const QString &path)

@@ -37,6 +37,9 @@ public:
     explicit Toerstein(QWidget *parent = 0);
     ~Toerstein();
 
+protected:
+    bool event(QEvent* e);
+
 private slots:
     void createNewFile(void);
     void createNewTab(void);
@@ -47,6 +50,7 @@ private slots:
     void closeFile(void);
     void closeTab(int tabIndex);
     void toggleViewMode(void);
+    void toggleMenuBarVisibility(void);
     void setLeftFilePath(const QString &path);
     void setRightFilePath(const QString &path);
 
@@ -55,6 +59,7 @@ signals:
 
 private:
     void createMenuBar(void);
+    void createShortcuts(void);
     ToolArea* createToolArea(void);
     bool isFileValid(const QString &path);
     void open(const QString &path);
@@ -62,6 +67,8 @@ private:
     TabView *tabView;
     ToersteBase *toersteBase;
     ToerstelliSense *toerstelliSense;
+    Qt::Key prevKey;
+    Qt::KeyboardModifiers prevModifier;
 };
 
 #endif // TOERSTEIN_H

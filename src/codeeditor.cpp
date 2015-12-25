@@ -430,6 +430,7 @@ void CodeEditor::keyPressEvent(QKeyEvent* e)
     QKeyEvent *newEvent = new QKeyEvent( e->type(), e->key(), e->modifiers(),
         text, e->isAutoRepeat(), e->count());
     QPlainTextEdit::keyPressEvent(newEvent);
+    QWidget::keyPressEvent(e);
 }
 
 void CodeEditor::highlightCurrentLine()
