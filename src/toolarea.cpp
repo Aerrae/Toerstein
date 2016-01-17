@@ -21,6 +21,7 @@
 
 #include "toolarea.h"
 #include "filesearch.h"
+#include "toerstediff.h"
 
 #include <QGridLayout>
 #include <QTabWidget>
@@ -47,6 +48,8 @@ ToolArea::ToolArea(QWidget *parent, ToersteBase *database) : QWidget(parent)
 
     leftFileSearch->hide();
     leftCodeEditor->hide();
+
+    toersteDiff = new ToersteDiff(this, leftCodeEditor, rightCodeEditor);
 
     connect(leftCodeEditor,SIGNAL(filePathChanged(QString)),leftFileSearch,SLOT(setText(QString)));
     connect(rightCodeEditor,SIGNAL(filePathChanged(QString)),rightFileSearch,SLOT(setText(QString)));

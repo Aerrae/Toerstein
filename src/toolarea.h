@@ -25,6 +25,7 @@
 #include "toerstebase.h"
 #include "codeeditor.h"
 #include "filesearch.h"
+#include "toerstediff.h"
 
 #include <QWidget>
 #include <QGridLayout>
@@ -69,6 +70,7 @@ private:
     FileSearch *rightFileSearch;
     CodeEditor *rightCodeEditor;
     ToersteBase *toersteBase;
+    ToersteDiff *toersteDiff;
     bool diffModeEnabled;
 
 private slots:

@@ -138,4 +138,10 @@ private:
     CodeEditor *codeEditor;
 };
 
+enum textBlockStates
+  {
+     normalText = -1,
+     lineSpacer = 0
+  };
+
 #endif
