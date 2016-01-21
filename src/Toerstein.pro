@@ -20,7 +20,9 @@ SOURCES += main.cpp\
     toerstebase.cpp \
     toerstellisense.cpp \
     toerstebaseworker.cpp \
-    toerstellisenseworker.cpp
+    toerstellisenseworker.cpp \
+    tabview.cpp \
+    toerstediff.cpp
 
 HEADERS  += toerstein.h \
     codeeditor.h \
@@ -29,6 +31,8 @@ HEADERS  += toerstein.h \
     toerstebase.h \
     toerstellisense.h \
     toerstebaseworker.h \
-    toerstellisenseworker.h
+    toerstellisenseworker.h \
+    tabview.h \
+    toerstediff.h
 
 FORMS    +=

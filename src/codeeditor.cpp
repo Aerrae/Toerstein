@@ -64,7 +64,7 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
     highlightCurrentLine();
 
     setContentChanged(false);
-    filePath = "";
+    m_filePath = "";
     indentWithSpaces = true;
     indentSize = 4;
 
@@ -74,11 +74,17 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
 
     alertBackgroundChangesDefault = true;
     alertBackgroundChanges = alertBackgroundChangesDefault;
+    setLineWrapMode(NoWrap);
 }
 
-bool CodeEditor::hasContent(void)
+QString CodeEditor::filePath(void)
 {
-    return ( !filePath.isEmpty() || contentHasChanged );
+    return m_filePath;
+}
+
+bool CodeEditor::hasUnsavedContent(void)
+{
+    return ( !m_filePath.isEmpty() || contentHasChanged );
 }
 
 bool CodeEditor::hasChanged(void)
@@ -113,6 +119,7 @@ bool CodeEditor::open(const QString &path)
                                     tr("File:\n\"%1\"\n"
                                        "does not exist.").arg(path),
                                        QMessageBox::Ok );
+        emit fileDoesNotExist(path);
         return false;
     }
 
@@ -161,19 +168,13 @@ bool CodeEditor::open(const QString &path)
 
 bool CodeEditor::save(void)
 {
-    if ( filePath.isEmpty() )
+    if ( m_filePath.isEmpty() )
     {
         return saveAs();
     }
     else
-    {   if ( contentHasChanged )
-        {
-            return writeFile(filePath);
-        }
-        else
-        {
-            return true;
-        }
+    {
+        return writeFile(m_filePath);
     }
 }
 
@@ -193,9 +194,9 @@ bool CodeEditor::saveAs(void)
 
 bool CodeEditor::writeFile(const QString &path)
 {
-    if ( !filePath.isEmpty() )
+    if ( !m_filePath.isEmpty() )
     {
-        fileSystemWatcher->removePath(filePath);
+        fileSystemWatcher->removePath(m_filePath);
     }
 
     file.setFileName(path);
@@ -285,9 +286,9 @@ bool CodeEditor::closeFile(void)
         }
     }
 
-    if ( !filePath.isEmpty() )
+    if ( !m_filePath.isEmpty() )
     {
-        fileSystemWatcher->removePath(filePath);
+        fileSystemWatcher->removePath(m_filePath);
     }
 
     setPlainText("");
@@ -319,7 +320,14 @@ void CodeEditor::setAlertBackgroundChanges(bool newAlertChanges)
 
 void CodeEditor::fileChanged(const QString &path)
 {
-    fileSystemWatcher->removePath(filePath);
+    fileSystemWatcher->removePath(m_filePath);
+
+    QFileInfo fileInfo(path);
+
+    if ( !fileInfo.exists() )
+    {
+        return;
+    }
 
     if ( contentHasChanged )
     {
@@ -356,9 +364,9 @@ void CodeEditor::fileChanged(const QString &path)
 
 void CodeEditor::setFilePath(const QString &path)
 {
-    if (filePath != path)
+    if (m_filePath != path)
     {
-        filePath = path;
+        m_filePath = path;
         emit filePathChanged(path);
     }
 }
@@ -423,6 +431,7 @@ void CodeEditor::keyPressEvent(QKeyEvent* e)
     QKeyEvent *newEvent = new QKeyEvent( e->type(), e->key(), e->modifiers(),
         text, e->isAutoRepeat(), e->count());
     QPlainTextEdit::keyPressEvent(newEvent);
+    QWidget::keyPressEvent(e);
 }
 
 void CodeEditor::highlightCurrentLine()
@@ -456,17 +465,21 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
 
     while (block.isValid() && top <= event->rect().bottom())
     {
-        if (block.isVisible() && bottom >= event->rect().top())
+        if ( block.userState() == normalText )
         {
-            QString number = QString::number(blockNumber + 1);
-            painter.setPen(Qt::black);
-            painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(),
-                             Qt::AlignRight, number);
+            if ( block.isVisible() && bottom >= event->rect().top() )
+            {
+                QString number = QString::number(blockNumber + 1);
+                painter.setPen(Qt::black);
+                painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(),
+                                 Qt::AlignRight, number);
+            }
+
+        ++blockNumber;
         }
 
         block = block.next();
         top = bottom;
         bottom = top + (int) blockBoundingRect(block).height();
-        ++blockNumber;
     }
 }

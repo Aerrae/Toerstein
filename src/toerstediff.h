@@ -1,7 +1,7 @@
 /************************************************************************************
 **
 ** Toerstein - Code Editor
-** Copyright (C) 2015  Tommi Tauriainen
+** Copyright (C) 2016  Tommi Tauriainen
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -19,34 +19,27 @@
 **
 *************************************************************************************/
 
-#ifndef TOERSTEBASEWORKER_H
-#define TOERSTEBASEWORKER_H
+#ifndef TOERSTEDIFF_H
+#define TOERSTEDIFF_H
 
 #include <QObject>
-#include <QFileInfo>
-#include <QSqlDatabase>
+#include <QTextCursor>
 
-class ToersteBaseWorker : public QObject
+#include "codeeditor.h"
+
+class ToersteDiff : public QObject
 {
     Q_OBJECT
-
 public:
-    explicit ToersteBaseWorker(void);
-    ~ToersteBaseWorker();
-
-public slots:
-    void openDatabase(void);
-    void queryFileInfo(const QString &fileNameToSearch);
-    void insertFileInfo(const QString &path);
-    void deleteFileInfo(const QString &path);
-
-signals:
+    explicit ToersteDiff(QObject *parent = 0, CodeEditor *leftEditor = 0, CodeEditor *rightEditor = 0);
 
 private slots:
-    bool isFileIndexed(const QString &path);
+    void syncCursors(void);
 
 private:
-    QSqlDatabase fileDatabase;
+    void syncToReferenceCursor(QTextCursor &targetCursor, const QTextCursor &referenceCursor );
+    CodeEditor *leftCodeEditor;
+    CodeEditor *rightCodeEditor;
 };
 
-#endif // TOERSTEBASEWORKER_H
+#endif // TOERSTEDIFF_H

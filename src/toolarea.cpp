@@ -21,6 +21,7 @@
 
 #include "toolarea.h"
 #include "filesearch.h"
+#include "toerstediff.h"
 
 #include <QGridLayout>
 #include <QTabWidget>
@@ -48,13 +49,18 @@ ToolArea::ToolArea(QWidget *parent, ToersteBase *database) : QWidget(parent)
     leftFileSearch->hide();
     leftCodeEditor->hide();
 
+    toersteDiff = new ToersteDiff(this, leftCodeEditor, rightCodeEditor);
+
     connect(leftCodeEditor,SIGNAL(filePathChanged(QString)),leftFileSearch,SLOT(setText(QString)));
     connect(rightCodeEditor,SIGNAL(filePathChanged(QString)),rightFileSearch,SLOT(setText(QString)));
     connect(leftCodeEditor,SIGNAL(filePathChanged(QString)),this,SLOT(setLeftFilePath(QString)));
     connect(rightCodeEditor,SIGNAL(filePathChanged(QString)),this,SLOT(setRightFilePath(QString)));
+    connect(leftCodeEditor,SIGNAL(fileDoesNotExist(QString)),toersteBase->worker(),SLOT(deleteFileInfo(QString)));
+    connect(rightCodeEditor,SIGNAL(fileDoesNotExist(QString)),toersteBase->worker(),SLOT(deleteFileInfo(QString)));
 
     connect(leftFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
     connect(rightFileSearch,SIGNAL(returnPressed()),this,SLOT(fileSearchPathOpen()));
+
     connect(leftFileSearch,SIGNAL(writingPaused(QString)),toersteBase->worker(),SLOT(queryFileInfo(QString)));
     connect(rightFileSearch,SIGNAL(writingPaused(QString)),toersteBase->worker(),SLOT(queryFileInfo(QString)));
 
@@ -67,14 +73,14 @@ bool ToolArea::open(const QString &path)
 {
     if ( leftCodeEditor->hasFocus() || leftFileSearch->hasFocus() )
     {
-        if ( !leftCodeEditor->hasContent() )
+        if ( !leftCodeEditor->hasUnsavedContent() )
         {
             return leftCodeEditor->open(path);
         }
     }
     else
     {
-        if ( !rightCodeEditor->hasContent() )
+        if ( !rightCodeEditor->hasUnsavedContent() )
         {
             return rightCodeEditor->open(path);
         }
@@ -85,7 +91,7 @@ bool ToolArea::open(const QString &path)
 
 bool ToolArea::open(const QString &path1, const QString &path2)
 {
-    if ( leftCodeEditor->hasContent() || rightCodeEditor->hasContent() )
+    if ( hasUnsavedContent() )
     {
         return false;
     }
@@ -150,13 +156,18 @@ bool ToolArea::closeFile(void)
         }
     }
 
-    if ( leftCodeEditor->hasContent() || rightCodeEditor->hasContent() )
+    return !hasUnsavedContent();
+}
+
+bool ToolArea::hasUnsavedContent(void)
+{
+    if ( leftCodeEditor->hasUnsavedContent() || rightCodeEditor->hasUnsavedContent() )
     {
-        return false;
+        return true;
     }
     else
     {
-        return true;
+        return false;
     }
 }
 
@@ -177,24 +188,33 @@ void ToolArea::toggleViewMode(void)
     }
 }
 
-void ToolArea::setFocusToLeftFileSearch(void)
+void ToolArea::setFocusToFileSearch(ToolAreaSide side)
 {
-    leftFileSearch->setFocus();
+    if ( side == ToolAreaLeftSide )
+    {
+        leftFileSearch->setFocus();
+    }
+    else
+    {
+        rightFileSearch->setFocus();
+    }
 }
 
-void ToolArea::setFocusToRightFileSearch(void)
+void ToolArea::setFocusToCodeEditor(ToolAreaSide side)
 {
-    rightFileSearch->setFocus();
-}
+    if ( side == ToolAreaLeftSide )
+    {
+        if ( !diffModeEnabled )
+        {
+            toggleViewMode();
+        }
 
-void ToolArea::setFocusToLeftCodeEditor(void)
-{
-    leftCodeEditor->setFocus();
-}
-
-void ToolArea::setFocusToRightCodeEditor(void)
-{
-    rightCodeEditor->setFocus();
+        leftCodeEditor->setFocus();
+    }
+    else
+    {
+        rightCodeEditor->setFocus();
+    }
 }
 
 void ToolArea::setLeftFilePath(const QString &path)
@@ -239,4 +259,18 @@ void ToolArea::fileSearchPathOpen(void)
     {
         rightCodeEditor->open(path);
     }
+}
+
+ToolAreaSide ToolArea::isFileOpen(const QString &path)
+{
+    if ( leftCodeEditor->filePath() == path )
+    {
+        return ToolAreaLeftSide;
+    }
+    else if ( rightCodeEditor->filePath() == path )
+    {
+        return ToolAreaRightSide;
+    }
+
+   return ToolAreaNone;
 }

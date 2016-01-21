@@ -23,10 +23,11 @@
 
 #include "toerstebase.h"
 #include "codeeditor.h"
+#include "tabview.h"
 #include "toolarea.h"
 
 #include <QMenuBar>
-#include <QTabWidget>
+#include <QShortcut>
 #include <QFileDialog>
 #include <QDebug>
 #include <QCoreApplication>
@@ -41,10 +42,14 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     connect(this,SIGNAL(fileLoaded(QString)),toerstelliSense->worker(),SLOT(indexFile(QString)));
 
     createMenuBar();
+    createShortcuts();
 
     /* Create tab view */
-    tabWidget = new QTabWidget(this);
-    setCentralWidget(tabWidget);
+    tabView = new TabView(this);
+    tabView->setTabsClosable(true);
+    setCentralWidget(tabView);
+
+    connect(tabView,SIGNAL(tabCloseRequested(int)),this,SLOT(closeTab(int)));
 
     QCommandLineOption diffMode(QStringList() << "d" << "diff");
     QCommandLineParser parser;
@@ -84,26 +89,85 @@ Toerstein::Toerstein(QWidget *parent) : QMainWindow(parent)
     }
 }
 
+bool Toerstein::event(QEvent* e)
+{
+    if ( e->type() == QEvent::KeyPress )
+    {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+
+        prevKey = static_cast<Qt::Key>(keyEvent->key());
+        prevModifier = keyEvent->modifiers();
+    }
+    else if ( e->type() == QEvent::KeyRelease )
+    {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+
+        /* Check if only alt-key has been pressed and released */
+        if ( ( prevKey == Qt::Key_Alt ) &&
+            ( ( prevModifier == Qt::NoModifier ) ||
+              ( prevModifier == Qt::AltModifier ) ) &&
+            ( keyEvent->key() == Qt::Key_Alt ) &&
+            ( ( keyEvent->modifiers() == Qt::NoModifier ) ||
+              ( keyEvent->modifiers() == Qt::AltModifier ) ) )
+        {
+            toggleMenuBarVisibility();
+            return true;
+        }
+    }
+
+    return QMainWindow::event(e);
+}
+
 void Toerstein::createMenuBar(void)
 {
     QMenuBar *menuBar = new QMenuBar(this);
+    menuBar->setVisible(false);
 
     /* Create File menu */
-    QMenu *fileMenu = menuBar->addMenu("File");
+    QMenu *fileMenu = menuBar->addMenu(tr("&File"));
 
-    fileMenu->addAction( tr("New &Tab"), this, SLOT(createNewTab()), QKeySequence(tr("Ctrl+T", "File|New Tab") ) );
-    fileMenu->addAction( tr("&New"), this, SLOT(createNewFile()), QKeySequence(tr("Ctrl+N", "File|New File") ) );
-    fileMenu->addAction( tr("&Open"), this, SLOT(open()), QKeySequence(tr("Ctrl+O", "File|Open File") ) );
-    fileMenu->addAction( tr("Enter File &Path"), this, SLOT(search()), QKeySequence(tr("Ctrl+P", "File|Enter File Path") ) );
-    fileMenu->addAction( tr("&Save"), this, SLOT(save()), QKeySequence(tr("Ctrl+S", "File|Save File") ) );
+    fileMenu->addAction( tr("New &Tab"), this, SLOT(createNewTab()) );
+    fileMenu->addAction( tr("&New"), this, SLOT(createNewFile()) );
+    fileMenu->addAction( tr("&Open"), this, SLOT(open()) );
+    fileMenu->addAction( tr("Enter File &Path"), this, SLOT(search()) );
+    fileMenu->addAction( tr("&Save"), this, SLOT(save()) );
     fileMenu->addAction( tr("Save As..."), this, SLOT(saveAs()) );
-    fileMenu->addAction( tr("&Close File"), this, SLOT(closeFile()), QKeySequence(tr("Ctrl+W", "File|Close File") ) );
-    fileMenu->addAction( tr("&Quit"), this, SLOT(close()), QKeySequence(tr("Ctrl+Q", "File|Quit") ) );
+    fileMenu->addAction( tr("&Close File"), this, SLOT(closeFile()) );
+    fileMenu->addAction( tr("&Quit"), this, SLOT(close()) );
 
-    QMenu *viewMenu = menuBar->addMenu("View");
-    viewMenu->addAction( tr("&Toggle Diff View"), this, SLOT(toggleViewMode()), QKeySequence(tr("Ctrl+D", "Toggle Diff View|Quit") ) );
+    QMenu *viewMenu = menuBar->addMenu(tr("&View"));
+    viewMenu->addAction( tr("Toggle &Diff View"), this, SLOT(toggleViewMode()) );
 
     this->setMenuBar(menuBar);
+}
+
+void Toerstein::createShortcuts(void)
+{
+    QShortcut *shortcut;
+
+    /* In QMenuBar shortcuts won't work if menuBar is not visible,
+     * so we'll add them separately here
+     */
+
+    /* Shortcuts to File-menu */
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+T", "File|New Tab")),this,SLOT(createNewTab()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+N", "File|New File")),this,SLOT(createNewFile()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+O", "File|Open File")),this,SLOT(open()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+P", "File|Enter File Path") ),this,SLOT(search()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+S", "File|Save File") ),this,SLOT(save()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+W", "File|Close File") ),this,SLOT(closeFile()));
+    shortcut->setAutoRepeat(false);
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+Q", "File|Quit")),this,SLOT(close()));
+    shortcut->setAutoRepeat(false);
+
+    /* Shortcuts to View-menu */
+    shortcut = new QShortcut(QKeySequence(tr("Ctrl+D", "Toggle Diff View|Quit")),this,SLOT(toggleViewMode()));
+    shortcut->setAutoRepeat(false);
 }
 
 ToolArea* Toerstein::createToolArea(void)
@@ -117,15 +181,15 @@ ToolArea* Toerstein::createToolArea(void)
 void Toerstein::createNewFile(void)
 {
     ToolArea *toolArea = createToolArea();
-    tabWidget->setCurrentIndex(tabWidget->addTab(toolArea,"New file"));
-    toolArea->setFocusToRightCodeEditor();
+    tabView->setCurrentIndex(tabView->addTab(toolArea,"New file"));
+    toolArea->setFocusToCodeEditor(ToolAreaRightSide);
 }
 
 void Toerstein::createNewTab(void)
 {
     ToolArea *toolArea = createToolArea();
-    tabWidget->setCurrentIndex(tabWidget->addTab(toolArea,"New tab"));
-    toolArea->setFocusToRightFileSearch();
+    tabView->setCurrentIndex(tabView->addTab(toolArea,"New tab"));
+    toolArea->setFocusToFileSearch(ToolAreaRightSide);
 }
 
 bool Toerstein::isFileValid(const QString &path)
@@ -157,19 +221,36 @@ void Toerstein::open(void)
 
 void Toerstein::open(const QString &path)
 {
+    ToolArea* toolArea;
+    ToolAreaSide side;
+
     if (!isFileValid(path))
     {
         return;
     }
 
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    for ( int i = 0; i < tabView->count(); i++ )
+    {
+        toolArea = qobject_cast<ToolArea *>(tabView->widget(i));
+
+        side = toolArea->isFileOpen(path);
+
+        if ( side != ToolAreaNone )
+        {
+            tabView->setCurrentIndex(i);
+            toolArea->setFocusToCodeEditor(side);
+            return;
+        }
+    }
+
+    toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
 
     if ( !toolArea->open(path) )
     {
         createNewTab();
     }
 
-    toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->open(path);
 }
 
@@ -180,46 +261,68 @@ void Toerstein::open(const QString &path1, const QString &path2)
         return;
     }
 
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
 
     if ( !toolArea->open(path1, path2) )
     {
         createNewTab();
     }
 
-    toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->open(path1, path2);
 }
 
 void Toerstein::search(void)
 {
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->search();
 }
 
 void Toerstein::save(void)
 {
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->save();
 }
 void Toerstein::saveAs(void)
 {
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
     toolArea->saveAs();
 }
 
 void Toerstein::closeFile(void)
 {
-    ToolArea* toolArea = qobject_cast<ToolArea *>(tabWidget->currentWidget());
+    closeTab(tabView->currentIndex());
+}
+
+void Toerstein::closeTab(int tabIndex)
+{
+    ToolArea* toolArea = qobject_cast<ToolArea *>(tabView->widget(tabIndex));
+    ToolArea* previousToolArea = NULL;
+
+    if ( tabView->widget(tabIndex) != tabView->currentWidget() )
+    {
+        previousToolArea = qobject_cast<ToolArea *>(tabView->currentWidget());
+    }
+
+    if ( toolArea->hasUnsavedContent() )
+    {
+        tabView->setCurrentIndex(tabIndex);
+        tabView->currentWidget()->setFocus();
+    }
 
     if ( toolArea->closeFile() )
     {
-        tabWidget->removeTab(tabWidget->currentIndex());
+        tabView->removeTab(tabIndex);
     }
 
-    if ( tabWidget->currentWidget() )
+    if ( previousToolArea )
     {
-        tabWidget->currentWidget()->setFocus();
+        tabView->setCurrentIndex(tabView->indexOf(previousToolArea));
+        tabView->currentWidget()->setFocus();
+    }
+    else if ( tabView->currentWidget() )
+    {
+        tabView->currentWidget()->setFocus();
     }
     else
     {
@@ -229,7 +332,12 @@ void Toerstein::closeFile(void)
 
 void Toerstein::toggleViewMode(void)
 {
-    qobject_cast<ToolArea *>(tabWidget->currentWidget())->toggleViewMode();
+    qobject_cast<ToolArea *>(tabView->currentWidget())->toggleViewMode();
+}
+
+void Toerstein::toggleMenuBarVisibility(void)
+{
+    menuBar()->setVisible( !menuBar()->isVisible() );
 }
 
 void Toerstein::setLeftFilePath(const QString &path)
@@ -243,17 +351,17 @@ void Toerstein::setRightFilePath(const QString &path)
 
     qDebug() << "Toerstein: Right filepath set to" << path;
 
-    int tabIndex = tabWidget->indexOf(toolArea);
+    int tabIndex = tabView->indexOf(toolArea);
 
     if ( tabIndex >= 0 )
     {
         if ( path.isEmpty() )
         {
-            tabWidget->setTabText(tabIndex,"New tab");
+            tabView->setTabText(tabIndex,"New tab");
         }
         else
         {
-            tabWidget->setTabText(tabIndex,QFileInfo(path).fileName());
+            tabView->setTabText(tabIndex,QFileInfo(path).fileName());
             emit fileLoaded(path);
         }
     }

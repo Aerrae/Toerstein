@@ -62,9 +62,10 @@ class CodeEditor : public QPlainTextEdit
 public:
     CodeEditor(QWidget *parent = 0);
 
+    QString filePath(void);
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     int lineNumberAreaWidth();
-    bool hasContent(void);
+    bool hasUnsavedContent(void);
     bool hasChanged(void);
     QSize sizeHint() const Q_DECL_OVERRIDE
     {
@@ -86,7 +87,8 @@ protected:
     void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
     void keyPressEvent(QKeyEvent* e);
 signals:
-    void filePathChanged(const QString &name);
+    void filePathChanged(const QString &path);
+    void fileDoesNotExist(const QString &path);
 
 private slots:
     void fileChanged(const QString &path);
@@ -104,7 +106,7 @@ private:
     QMessageBox::StandardButton fileChangedAskToDiscard(const QString &path);
     QWidget *lineNumberArea;
     bool contentHasChanged;
-    QString filePath;
+    QString m_filePath;
     QFile file;
     bool indentWithSpaces;
     int indentSize;
@@ -135,5 +137,11 @@ protected:
 private:
     CodeEditor *codeEditor;
 };
+
+enum textBlockStates
+  {
+     normalText = -1,
+     lineSpacer = 0
+  };
 
 #endif

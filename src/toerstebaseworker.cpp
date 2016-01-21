@@ -55,7 +55,7 @@ void ToersteBaseWorker::openDatabase(void)
     QSqlQuery query;
 
     query.exec("CREATE TABLE IF NOT EXISTS file (id INT auto_increment primary key, "
-               "fileName TEXT, canonicalPath TEXT)");
+               "filePath TEXT, autoComplete TEXT)");
 }
 
 void ToersteBaseWorker::queryFileInfo(const QString &fileNameToSearch)
@@ -66,44 +66,40 @@ void ToersteBaseWorker::queryFileInfo(const QString &fileNameToSearch)
         return;
     }
 
-    QString fileName;
-    QStringList fileNameList;
+    QString autoComplete;
+    QStringList autoCompleteList;
     QSqlQuery query;
     QString queryString =
-            "SELECT * FROM file WHERE fileName LIKE '" + fileNameToSearch + "%'";
+            "SELECT * FROM file WHERE autoComplete LIKE '" + fileNameToSearch + "%'";
 
     qDebug() << "ToersteBase: fileinfo query" << fileNameToSearch;
 
     query.prepare(queryString);
     query.exec();
 
-    int fileNameField = query.record().indexOf("fileName");
-    int pathField = query.record().indexOf("canonicalPath");
+    int autoCompleteField = query.record().indexOf("autoComplete");
 
     while ( query.next() )
     {
-        fileName = query.value(fileNameField).toString() + " ( " + query.value(pathField).toString() +
-                QDir::separator() + query.value(fileNameField).toString() + " )";
-        fileNameList.append(fileName);
+        autoComplete = query.value(autoCompleteField).toString();
+        autoCompleteList.append(autoComplete);
     }
 
     QMetaObject::invokeMethod(
         sender(),
         "updateList",
         Qt::QueuedConnection,
-        Q_ARG(QStringList, fileNameList));
+        Q_ARG(QStringList, autoCompleteList));
 
 }
 
-bool ToersteBaseWorker::isFileIndexed(const QFileInfo &fileInfo)
+bool ToersteBaseWorker::isFileIndexed(const QString &path)
 {
     QSqlQuery query;
     QString sqlError;
-    QString queryString =
-            "SELECT * FROM file WHERE fileName = '" + fileInfo.fileName() +
-            "' AND canonicalPath = '" + fileInfo.canonicalPath() + "'";
+    QString queryString = "SELECT * FROM file WHERE filePath = '" + path + "'";
 
-    qDebug() << "ToersteBase: Checking if file" << fileInfo.fileName() << "is in database.";
+    qDebug() << "ToersteBase: Checking if file" << path << "is in database.";
     qDebug() << "ToersteBase: SQL query:" << queryString;
 
     query.prepare(queryString);
@@ -118,12 +114,12 @@ bool ToersteBaseWorker::isFileIndexed(const QFileInfo &fileInfo)
 
     if ( query.next() )
     {
-        qDebug() << "ToersteBase: file" << fileInfo.fileName() << "found from database";
+        qDebug() << "ToersteBase: file" << path << "found from database";
         return true;
     }
     else
     {
-        qDebug() << "ToersteBase: file" << fileInfo.fileName() << "not found from database";
+        qDebug() << "ToersteBase: file" << path << "not found from database";
         return false;
     }
 
@@ -139,7 +135,7 @@ void ToersteBaseWorker::insertFileInfo(const QString &path)
 
     QFileInfo fileInfo(path);
 
-    if ( isFileIndexed(fileInfo) )
+    if ( isFileIndexed(path) )
     {
         return;
     }
@@ -147,11 +143,45 @@ void ToersteBaseWorker::insertFileInfo(const QString &path)
     QSqlQuery query;
     QString sqlError;
 
-    QString queryString =
-            "INSERT INTO file (fileName, canonicalPath) VALUES ('" + fileInfo.fileName() +
-            "', '" + fileInfo.canonicalPath() + "')";
+    QString autoComplete = fileInfo.fileName() + " ( " +
+        QDir::toNativeSeparators(fileInfo.canonicalPath()) +
+        QDir::separator() + fileInfo.fileName() + " )";
 
-    qDebug() << "ToersteBase: inserting file info for" << fileInfo.fileName() << "with path" << fileInfo.canonicalPath();
+    QString queryString =
+            "INSERT INTO file (filePath, autoComplete) VALUES ('" + path +
+            "', '" + autoComplete + "')";
+
+    qDebug() << "ToersteBase: inserting file info for" << fileInfo.fileName() <<
+        "with path" << fileInfo.canonicalPath();
+
+    qDebug() << "ToersteBase: SQL query:" << queryString;
+
+    query.prepare(queryString);
+    query.exec();
+    sqlError = query.lastError().databaseText();
+
+    if ( !sqlError.isEmpty() )
+    {
+        qDebug() << "ToersteBase: SQL error:" << sqlError;
+    }
+}
+
+void ToersteBaseWorker::deleteFileInfo(const QString &path)
+{
+    if( !fileDatabase.isOpen() )
+    {
+        qDebug() << "ToersteBase: Error: Database is not open";
+        return;
+    }
+
+    QFileInfo fileInfo(path);
+
+    QSqlQuery query;
+    QString sqlError;
+
+    QString queryString = "DELETE FROM file WHERE filePath = '" + path + "'";
+
+    qDebug() << "ToersteBase: deleting file info of" << path;
     qDebug() << "ToersteBase: SQL query:" << queryString;
 
     query.prepare(queryString);

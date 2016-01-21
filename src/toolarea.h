@@ -25,10 +25,18 @@
 #include "toerstebase.h"
 #include "codeeditor.h"
 #include "filesearch.h"
+#include "toerstediff.h"
 
 #include <QWidget>
 #include <QGridLayout>
 #include <QLineEdit>
+
+enum ToolAreaSide
+  {
+     ToolAreaNone,
+     ToolAreaLeftSide,
+     ToolAreaRightSide
+  };
 
 class ToolArea : public QWidget
 {
@@ -41,11 +49,11 @@ public slots:
     void save(void);
     void saveAs(void);
     bool closeFile(void);
+    bool hasUnsavedContent(void);
     void toggleViewMode(void);
-    void setFocusToLeftFileSearch(void);
-    void setFocusToRightFileSearch(void);
-    void setFocusToLeftCodeEditor(void);
-    void setFocusToRightCodeEditor(void);
+    void setFocusToFileSearch(ToolAreaSide side);
+    void setFocusToCodeEditor(ToolAreaSide side);
+    ToolAreaSide isFileOpen(const QString &path);
 
 public:
     bool open(const QString &path);
@@ -62,6 +70,7 @@ private:
     FileSearch *rightFileSearch;
     CodeEditor *rightCodeEditor;
     ToersteBase *toersteBase;
+    ToersteDiff *toersteDiff;
     bool diffModeEnabled;
 
 private slots:
